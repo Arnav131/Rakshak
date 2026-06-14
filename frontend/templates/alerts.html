@@ -63,7 +63,7 @@
     <!-- ================================================================ -->
     <section class="alert-list" id="alert-list">
         {% for alert in alerts %}
-        <div class="alert-card alert-card--{{ alert.severity }}" id="alert-{{ alert.id }}">
+        <div class="alert-card alert-card--{{ alert.severity }}" id="alert-{{ alert.id }}" onclick="window.location.href='/map/?focus_alert={{ alert.id }}'" style="cursor: pointer;">
             <div class="alert-severity-strip"></div>
             <div class="alert-body">
                 <div class="alert-header">

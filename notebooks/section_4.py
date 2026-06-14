@@ -1024,9 +1024,10 @@ class RootCauseHGNN(nn.Module):
 
         # MLP causal prediction scores
         query_expanded = query_node_emb.expand(K, -1)  # [K, D]
-        mlp_scores = self.causal_predictor(
+        mlp_logits = self.causal_predictor(
             query_expanded, candidate_node_embs
         )  # [K]
+        mlp_scores = torch.sigmoid(mlp_logits)
 
         # Fused score: weighted average of dot-product and MLP
         fused_scores = 0.4 * dot_scores + 0.6 * mlp_scores  # [K]

@@ -49,6 +49,5 @@ def project_meta(request):
     return {
         'project_name': 'RAKSHAK',
         'project_subtitle': 'Railway Operations Control Center',
-        'project_version': 'Phase 1 — Prototype',
         'server_time': timezone.now(),
     }

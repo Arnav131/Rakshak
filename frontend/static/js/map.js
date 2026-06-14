@@ -110,14 +110,25 @@ function initRailwayMapFromAPI() {
         _renderRoutes(map, routes);
         _renderStations(map, stations);
         _renderTickets(map, tickets);
-        _renderAlerts(map, alerts);
+        var alertMarkers = _renderAlerts(map, alerts);
 
         // Fit map to show entire Indian railway network
         var indiaBounds = L.latLngBounds(
             [6.5, 68.0],    // Southwest (Kanyakumari / Gujarat coast)
             [35.5, 97.5]    // Northeast (Kashmir / Arunachal Pradesh)
         );
-        map.fitBounds(indiaBounds, { padding: [20, 20] });
+
+        // Handle focus_alert URL parameter
+        var urlParams = new URLSearchParams(window.location.search);
+        var focusAlert = urlParams.get('focus_alert');
+
+        if (focusAlert && alertMarkers[focusAlert]) {
+            var marker = alertMarkers[focusAlert];
+            map.setView(marker.getLatLng(), 12);
+            marker.openPopup();
+        } else {
+            map.fitBounds(indiaBounds, { padding: [20, 20] });
+        }
 
         // Start train simulation (Phase 8)
         if (typeof initTrainSimulation === 'function') {
@@ -274,6 +285,7 @@ function _renderTickets(map, tickets) {
 // ALERT MARKERS — pulsing severity indicators
 // ================================================================
 function _renderAlerts(map, alerts) {
+    var markers = {};
     alerts.forEach(function(alert) {
         var color = ALERT_SEVERITY_COLORS[alert.severity] || '#f59e0b';
 
@@ -308,7 +320,11 @@ function _renderAlerts(map, alerts) {
             maxWidth: 320,
             className: 'dark-popup',
         });
+        
+        markers[alert.id] = marker;
     });
+    
+    return markers;
 }
 
 
