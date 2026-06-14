@@ -1,171 +1,309 @@
-# README.md
-# 🛡️ RAKSHAK — AI-Powered Predictive Rail Maintenance System
+# 🚆 Rakshak - AI-Powered Railway Predictive Maintenance Platform
 
-> Predicting failures before derailments happen.
+## Overview
+
+Rakshak is an intelligent railway infrastructure monitoring and predictive maintenance platform designed to improve operational safety, reduce downtime, and streamline maintenance workflows.
+
+The platform provides a unified ecosystem where sensor data, infrastructure assets, alerts, maintenance tickets, and geospatial information are brought together into a single operational dashboard.
+
+By transforming infrastructure data into actionable insights, Rakshak helps railway authorities detect potential failures early, prioritize maintenance activities, and improve overall network reliability.
 
 ---
 
 ## Problem Statement
 
-Indian Railways operates one of the world's largest rail networks — 68,000+ route kilometers carrying over 23 million passengers daily. Despite this scale, infrastructure monitoring remains largely **manual and reactive**:
+Railway infrastructure consists of thousands of interconnected assets including tracks, stations, signaling equipment, and monitoring sensors.
 
-- Track inspections rely on periodic visual checks by gangers
-- Rail fractures, gauge deviations, and thermal buckling are detected **after** damage occurs
-- Emergency speed restrictions and derailments cause massive economic losses (₹30,000+ Crore/year)
+Traditional maintenance approaches are often:
 
-**There is no unified, real-time predictive system** that detects failures before they become catastrophic.
+* Reactive instead of preventive
+* Difficult to monitor at scale
+* Fragmented across multiple systems
+* Lacking centralized visibility
 
-## Solution
+Rakshak addresses these challenges through centralized monitoring, intelligent alerting, infrastructure mapping, and maintenance workflow management.
 
-**Rakshak** is an AI-powered predictive maintenance platform that:
+---
 
-1. **Monitors** track infrastructure via IoT sensor telemetry (vibration, temperature, gauge)
-2. **Detects** anomalies in real-time using ML-based anomaly detection
-3. **Predicts** failures 72 hours before they occur
-4. **Dispatches** maintenance crews automatically via intelligent ticketing
-5. **Visualizes** the entire railway network on an interactive operations dashboard
+## Key Features
 
-## Current Status
+### 📊 Operational Dashboard
 
-### ✅ Phase 1 — UI Prototype (Current)
+* Centralized system overview
+* Infrastructure health visibility
+* Sensor activity monitoring
+* Operational status tracking
 
-A fully functional, demo-ready **Railway Operations Control Center** dashboard built with Django.
+### 🚨 Alert Management
 
-**Features implemented:**
-- Dashboard with 5 KPI cards (Health, Alerts, Failures, Savings, Tracks)
-- Sensor trend charts (vibration, temperature, gauge deviation)
-- Alerts page with severity filtering
-- Maintenance tickets with assigned engineer details
-- Interactive railway map (Leaflet.js) with 12 Indian stations
-- Dark operations-center theme with responsive design
-- All mock data simulates realistic Indian Railways operations
+* Alert generation and monitoring
+* Severity classification
+* Escalation workflows
+* Alert lifecycle tracking
 
-**Not yet implemented (future phases):**
-- Real sensor ingestion
-- ML anomaly detection (Isolation Forest)
-- AI agent layer (LangGraph/CrewAI)
-- PostgreSQL + TimescaleDB
-- Authentication & RBAC
-- Docker containerization
+### 🎫 Maintenance Ticketing
 
-## Tech Stack
+* Maintenance issue reporting
+* Ticket assignment and tracking
+* Status history logging
+* Team-based workflow management
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | HTML, CSS, Vanilla JavaScript |
-| Charts | Chart.js |
-| Maps | Leaflet.js |
-| Backend | Django |
-| Database | SQLite (prototype) → PostgreSQL (future) |
-| Fonts | Inter, JetBrains Mono (Google Fonts) |
+### 🗺️ Railway Network Mapping
+
+* Interactive GIS visualization
+* Station and route display
+* Infrastructure monitoring view
+* Alert and ticket geolocation
+
+### 📡 Sensor Monitoring
+
+* Sensor inventory management
+* Calibration tracking
+* Historical readings storage
+* Asset-linked telemetry
+
+### 🤖 Predictive Analytics Framework
+
+* ML model registry
+* Model execution tracking
+* Anomaly prediction storage
+* Future-ready AI integration architecture
+
+### 📋 Audit & Traceability
+
+* Operational audit logs
+* Historical activity tracking
+* Accountability and transparency
+
+---
+
+## System Architecture
+
+```text
+Sensors & Infrastructure
+            │
+            ▼
+      Data Collection
+            │
+            ▼
+       Railway Database
+            │
+ ┌──────────┼──────────┐
+ ▼          ▼          ▼
+Alerts   Analytics   Mapping
+ ▼          ▼          ▼
+Tickets  Predictions  GIS View
+            │
+            ▼
+      Operational Dashboard
+```
+
+---
+
+## Technology Stack
+
+### Backend
+
+* Python 3
+* Django 4.2
+* Django ORM
+
+### Database
+
+* SQLite (Current Prototype)
+* PostgreSQL Ready Architecture
+
+### Frontend
+
+* Django Templates
+* HTML5
+* CSS3
+* Vanilla JavaScript
+
+### Mapping
+
+* Leaflet.js
+
+### Development Tools
+
+* Git
+* GitHub
+* Python Virtual Environment (venv)
+
+---
 
 ## Project Structure
 
-```
+```text
 Rakshak/
-├── frontend/
-│   ├── templates/
-│   │   ├── base.html              # Base layout with nav + header
-│   │   ├── dashboard.html         # Dashboard with KPIs + charts
-│   │   ├── alerts.html            # Alert listing + filters
-│   │   ├── tickets.html           # Maintenance ticket management
-│   │   └── map.html               # Leaflet railway map
-│   └── static/
-│       ├── css/
-│       │   └── dashboard.css      # Complete dark theme CSS
-│       ├── js/
-│       │   ├── dashboard.js       # Charts, clock, counters
-│       │   └── map.js             # Leaflet map initialization
-│       └── images/
 │
 ├── backend/
-│   ├── manage.py
-│   ├── rakshak_project/
-│   │   ├── settings.py            # Django configuration
-│   │   ├── urls.py                # Root URL routing
-│   │   ├── wsgi.py
-│   │   └── asgi.py
-│   ├── core/                      # Shared utilities
-│   │   └── context_processors.py  # Navigation + project meta
-│   ├── sensors/                   # Dashboard + sensor data
-│   │   ├── views.py
-│   │   ├── mock_data.py
-│   │   └── urls.py
-│   ├── alerts/                    # Alert management
-│   │   ├── views.py
-│   │   ├── mock_data.py
-│   │   └── urls.py
-│   ├── tickets/                   # Maintenance tickets
-│   │   ├── views.py
-│   │   ├── mock_data.py
-│   │   └── urls.py
-│   ├── map_view/                  # Railway map view
-│   │   ├── views.py
-│   │   ├── mock_data.py
-│   │   └── urls.py
-│   └── agents/                    # Placeholder — future AI agents
-│       └── __init__.py
+│   ├── railway/
+│   ├── sensors/
+│   ├── alerts/
+│   ├── tickets/
+│   ├── map_view/
+│   ├── agents/
+│   └── rakshak_project/
+│
+├── frontend/
+│   ├── static/
+│   └── templates/
 │
 ├── docs/
-│   ├── architecture/
-│   │   └── system_overview.md
-│   └── reports/
-│       └── PHASE_REPORT.md
-│
+├── notebooks/
 ├── presentation/
 ├── demo_assets/
-│   └── demo_scenario.md
 │
-├── .gitignore
-├── README.md
-└── requirements.txt
+├── requirements.txt
+└── db.sqlite3
 ```
 
-## Quick Start
+---
 
-### Prerequisites
-- Python 3.10+
-- pip
+## Core Modules
 
-### Installation
+| Module   | Responsibility                          |
+| -------- | --------------------------------------- |
+| railway  | Core domain models and database schema  |
+| sensors  | Sensor monitoring and dashboard views   |
+| alerts   | Alert management workflows              |
+| tickets  | Maintenance ticket lifecycle            |
+| map_view | GIS visualization and APIs              |
+| core     | Shared utilities and context processors |
+| agents   | Future AI agent integration             |
+
+---
+
+## API Endpoints
+
+| Endpoint         | Description          |
+| ---------------- | -------------------- |
+| `/api/stations/` | Railway station data |
+| `/api/routes/`   | Route geometry data  |
+| `/api/alerts/`   | Active alerts        |
+| `/api/tickets/`  | Maintenance tickets  |
+| `/api/trains/`   | Train position data  |
+| `/api/summary/`  | Dashboard statistics |
+
+---
+
+## Database Highlights
+
+The platform maintains a unified railway domain model covering:
+
+* Railway Zones
+* Divisions
+* Stations
+* Track Sections
+* Infrastructure Assets
+* Sensors
+* Sensor Readings
+* Alerts
+* Escalations
+* Maintenance Teams
+* Tickets
+* ML Models
+* Predictions
+* Audit Logs
+
+---
+
+## Installation
+
+### 1. Clone Repository
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/Rakshak.git
+git clone <repository-url>
 cd Rakshak
+```
 
-# Create virtual environment
+### 2. Create Virtual Environment
+
+```bash
 python -m venv venv
+```
 
-# Activate (Windows)
+### 3. Activate Environment
+
+Windows:
+
+```bash
 venv\Scripts\activate
+```
 
-# Activate (macOS/Linux)
+Linux/Mac:
+
+```bash
 source venv/bin/activate
+```
 
-# Install dependencies
+### 4. Install Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-### Run the Server
+### 5. Apply Migrations
 
 ```bash
-cd backend
-python manage.py migrate
-python manage.py runserver
+python backend/manage.py migrate
 ```
 
-### Access the Dashboard
+### 6. Run Development Server
 
-Open your browser and navigate to:
+```bash
+python backend/manage.py runserver
+```
 
-| Page | URL |
-|------|-----|
-| Dashboard | http://127.0.0.1:8000/ |
-| Alerts | http://127.0.0.1:8000/alerts/ |
-| Tickets | http://127.0.0.1:8000/tickets/ |
-| Map | http://127.0.0.1:8000/map/ |
+---
+
+## Future Roadmap
+
+### Phase 2
+
+* PostgreSQL migration
+* Real-time data ingestion
+* Advanced analytics pipeline
+* Improved geospatial intelligence
+
+### Phase 3
+
+* Autonomous AI agents
+* Predictive maintenance recommendations
+* Real-time anomaly detection
+* Large-scale railway deployment readiness
+
+---
+
+## Team Contributions
+
+### Backend Development
+
+* Database design
+* API development
+* Django architecture
+
+### Frontend Development
+
+* Dashboard UI
+* Ticket management interface
+* Mapping interface
+
+### Data & Analytics
+
+* Sensor data modeling
+* Prediction framework
+* Alert intelligence architecture
+
+---
+
+## Impact
+
+Rakshak aims to improve railway safety, operational visibility, and maintenance efficiency by providing a centralized platform capable of supporting future AI-driven predictive maintenance systems.
+
+---
 
 ## License
 
-This project is developed for the FAR AWAY 2026 hackathon.
+This project was developed as part of a hackathon/research prototype and is intended for demonstration and educational purposes.
