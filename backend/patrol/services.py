@@ -14,17 +14,12 @@ from ai_integration.prediction_service import PredictionService
 
 
 def generate_patrol_code():
-    """Generate unique patrol code: PTR-2026-XXXX.
-    Uses count + random suffix to mitigate race-condition duplicates.
-    """
+    """Generate unique patrol code: PTR-2026-XXXX."""
     year = timezone.now().year
     count = WorkerPatrolReport.objects.filter(
         patrol_code__startswith=f"PTR-{year}"
     ).count() + 1
-    # Add random suffix to mitigate race-condition collisions
-    import random
-    suffix = random.randint(0, 99)
-    return f"PTR-{year}-{count:04d}{suffix:02d}"[:30]
+    return f"PTR-{year}-{count:04d}"
 
 
 @transaction.atomic

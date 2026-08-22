@@ -24,20 +24,17 @@ logger = logging.getLogger("rakshak.api.predict")
 
 # Counter for generating unique alert codes within this process
 _alert_counter = 0
-_alert_counter_lock = __import__('threading').Lock()
 
 
 def _generate_alert_code():
     """Generate a unique, collision-resistant alert code."""
     global _alert_counter
-    with _alert_counter_lock:
-        _alert_counter += 1
-        counter_val = _alert_counter
+    _alert_counter += 1
     now = timezone.now()
     # Add process ID for multi-worker safety
     import os
     pid = os.getpid() % 10000
-    return f"ALT-{now.strftime('%Y%m%d%H%M%S')}-{pid:04d}-{counter_val:04d}"
+    return f"ALT-{now.strftime('%Y%m%d%H%M%S')}-{pid:04d}-{_alert_counter:04d}"
 
 
 def _validate_sensor_input(data):
