@@ -1,15 +1,3 @@
-# backend/core/context_processors.py
-"""
-Shared context processors injected into every template.
-
-These provide navigation items and project metadata so that
-base.html can render the nav bar and footer without each view
-having to repeat the same context.
-"""
-
-from django.utils import timezone
-
-
 def navigation(request):
     """Inject navigation items with active-page detection."""
     nav_items = [
@@ -38,16 +26,39 @@ def navigation(request):
             'description': 'Railway Network',
         },
     ]
+
+    # Add controller-only tools for staff users
+    if request.user.is_authenticated and request.user.is_staff:
+        nav_items.append({
+            'name': 'Simulation',
+            'url': '/simulation/',
+            'icon': 'simulation',
+            'description': 'Live Journey Simulation',
+        })
+        nav_items.append({
+            'name': 'Admin',
+            'url': '/admin/',
+            'icon': 'admin',
+            'description': 'Control & Audit',
+        })
+
+    # Detect active page
     current_path = request.path
     for item in nav_items:
-        item['active'] = current_path == item['url']
-    return {'nav_items': nav_items}
+        item['active'] = (
+            current_path == item['url'] or
+            (item['url'] == '/admin/' and current_path.startswith('/admin/'))
+        )
 
+    return {
+        'nav_items': nav_items,
+        'is_controller': request.user.is_authenticated and request.user.is_staff
+    }
 
 def project_meta(request):
-    """Inject project-wide metadata."""
     return {
-        'project_name': 'RAKSHAK',
-        'project_subtitle': 'Railway Operations Control Center',
-        'server_time': timezone.now(),
+        "PROJECT_NAME": "Rakshak",
+        "PROJECT_VERSION": "1.0",
+        "project_name": "RAKSHAK",
+        "project_subtitle": "Predictive Rail Maintenance",
     }

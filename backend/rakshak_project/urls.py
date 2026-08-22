@@ -7,16 +7,25 @@ Routes:
   /alerts/     → Alerts page
   /tickets/    → Maintenance Tickets page
   /map/        → Railway Map page
+  /simulation/ → Live Simulation page (admin/staff only — enforced in view + nav)
   /api/        → JSON API endpoints (map data)
+  /api/ai/     → AI prediction endpoints (ai_integration)
+  /api/predict/ → Prediction endpoints (sensors app)
+  /api/simulation/ → Simulation run endpoint (admin/staff only)
 """
-
+from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('accounts/', include('django.contrib.auth.urls')),
     path('', include('sensors.urls')),
     path('alerts/', include('alerts.urls')),
     path('tickets/', include('tickets.urls')),
     path('map/', include('map_view.urls')),
+    path('simulation/', include('simulation.urls')),
     path('api/', include('map_view.api_urls')),
+    path('api/predict/', include('sensors.api_urls')),
+    path('api/ai/', include('ai_integration.api_urls')),
+    path('api/simulation/', include('simulation.api_urls')),
 ]
-

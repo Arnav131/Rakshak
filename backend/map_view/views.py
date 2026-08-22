@@ -6,10 +6,11 @@ All map data is now fetched from API endpoints (/api/stations/,
 /api/routes/, etc.) by the frontend JavaScript. This view only
 renders the HTML template shell.
 """
+from django.contrib.auth.decorators import login_required
 
 from django.shortcuts import render
 
-
+@login_required
 def map_page(request):
     """Render the railway map page."""
     context = {
