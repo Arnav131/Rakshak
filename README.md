@@ -1,309 +1,268 @@
-# 🚆 Rakshak - AI-Powered Railway Predictive Maintenance Platform
+# 🚆 Rakshak - Railway Maintenance Dashboard Prototype
 
-## Overview
-
-Rakshak is an intelligent railway infrastructure monitoring and predictive maintenance platform designed to improve operational safety, reduce downtime, and streamline maintenance workflows.
-
-The platform provides a unified ecosystem where sensor data, infrastructure assets, alerts, maintenance tickets, and geospatial information are brought together into a single operational dashboard.
-
-By transforming infrastructure data into actionable insights, Rakshak helps railway authorities detect potential failures early, prioritize maintenance activities, and improve overall network reliability.
+Rakshak is a prototype Railway Maintenance Dashboard built using Django. It provides an interactive interface for monitoring railway assets, maintenance alerts, routes, sensors, and support tickets. The project is designed to simulate a railway infrastructure monitoring system using seeded demo data.
 
 ---
 
-## Problem Statement
+# Features
 
-Railway infrastructure consists of thousands of interconnected assets including tracks, stations, signaling equipment, and monitoring sensors.
-
-Traditional maintenance approaches are often:
-
-* Reactive instead of preventive
-* Difficult to monitor at scale
-* Fragmented across multiple systems
-* Lacking centralized visibility
-
-Rakshak addresses these challenges through centralized monitoring, intelligent alerting, infrastructure mapping, and maintenance workflow management.
+- Dashboard with railway maintenance overview
+- Interactive railway route map
+- Alert Management
+- Ticket Management
+- Sensor Monitoring
+- PostgreSQL database support
+- REST API backend
+- Preloaded demo data for testing
 
 ---
 
-## Key Features
+# Tech Stack
 
-### 📊 Operational Dashboard
-
-* Centralized system overview
-* Infrastructure health visibility
-* Sensor activity monitoring
-* Operational status tracking
-
-### 🚨 Alert Management
-
-* Alert generation and monitoring
-* Severity classification
-* Escalation workflows
-* Alert lifecycle tracking
-
-### 🎫 Maintenance Ticketing
-
-* Maintenance issue reporting
-* Ticket assignment and tracking
-* Status history logging
-* Team-based workflow management
-
-### 🗺️ Railway Network Mapping
-
-* Interactive GIS visualization
-* Station and route display
-* Infrastructure monitoring view
-* Alert and ticket geolocation
-
-### 📡 Sensor Monitoring
-
-* Sensor inventory management
-* Calibration tracking
-* Historical readings storage
-* Asset-linked telemetry
-
-### 🤖 Predictive Analytics Framework
-
-* ML model registry
-* Model execution tracking
-* Anomaly prediction storage
-* Future-ready AI integration architecture
-
-### 📋 Audit & Traceability
-
-* Operational audit logs
-* Historical activity tracking
-* Accountability and transparency
+- Python 3.10+
+- Django 4.2+
+- Supabase/PostgreSQL via required `DATABASE_URL`
+- PyTorch 2.2+
+- NumPy
+- scikit-learn
+- HTML
+- CSS
+- JavaScript
+- Leaflet.js (Map)
 
 ---
 
-## System Architecture
+# Project Structure
 
-```text
-Sensors & Infrastructure
-            │
-            ▼
-      Data Collection
-            │
-            ▼
-       Railway Database
-            │
- ┌──────────┼──────────┐
- ▼          ▼          ▼
-Alerts   Analytics   Mapping
- ▼          ▼          ▼
-Tickets  Predictions  GIS View
-            │
-            ▼
-      Operational Dashboard
 ```
-
----
-
-## Technology Stack
-
-### Backend
-
-* Python 3
-* Django 4.2
-* Django ORM
-
-### Database
-
-* SQLite (Current Prototype)
-* PostgreSQL Ready Architecture
-
-### Frontend
-
-* Django Templates
-* HTML5
-* CSS3
-* Vanilla JavaScript
-
-### Mapping
-
-* Leaflet.js
-
-### Development Tools
-
-* Git
-* GitHub
-* Python Virtual Environment (venv)
-
----
-
-## Project Structure
-
-```text
-Rakshak/
+PROTOTYPE_1.0/
 │
 ├── backend/
 │   ├── railway/
-│   ├── sensors/
-│   ├── alerts/
-│   ├── tickets/
-│   ├── map_view/
-│   ├── agents/
-│   └── rakshak_project/
-│
-├── frontend/
+│   ├── templates/
 │   ├── static/
-│   └── templates/
+│   ├── manage.py
+│   └── requirements.txt
 │
-├── docs/
-├── notebooks/
-├── presentation/
-├── demo_assets/
-│
-├── requirements.txt
-└── db.sqlite3
+├── README.md
+├── Codebase.md
+└── Tree.md
 ```
 
 ---
 
-## Core Modules
+# Prerequisites
 
-| Module   | Responsibility                          |
-| -------- | --------------------------------------- |
-| railway  | Core domain models and database schema  |
-| sensors  | Sensor monitoring and dashboard views   |
-| alerts   | Alert management workflows              |
-| tickets  | Maintenance ticket lifecycle            |
-| map_view | GIS visualization and APIs              |
-| core     | Shared utilities and context processors |
-| agents   | Future AI agent integration             |
+Make sure the following software is installed:
+
+- Python 3.10 or above
+- A Supabase project with a Postgres database
+- Git
+- pip
 
 ---
 
-## API Endpoints
+# Clone the Repository
 
-| Endpoint         | Description          |
-| ---------------- | -------------------- |
-| `/api/stations/` | Railway station data |
-| `/api/routes/`   | Route geometry data  |
-| `/api/alerts/`   | Active alerts        |
-| `/api/tickets/`  | Maintenance tickets  |
-| `/api/trains/`   | Train position data  |
-| `/api/summary/`  | Dashboard statistics |
+```bash
+git clone https://github.com/<your-username>/<repository-name>.git
+cd <repository-name>/backend
+```
 
 ---
 
-## Database Highlights
+# Create Virtual Environment (Recommended)
 
-The platform maintains a unified railway domain model covering:
+### Windows
 
-* Railway Zones
-* Divisions
-* Stations
-* Track Sections
-* Infrastructure Assets
-* Sensors
-* Sensor Readings
-* Alerts
-* Escalations
-* Maintenance Teams
-* Tickets
-* ML Models
-* Predictions
-* Audit Logs
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+### Linux / macOS
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
 ---
 
-## Installation
+# Install Dependencies
 
-### 1. Clone Repository
-
-```bash
-git clone <repository-url>
-cd Rakshak
-```
-
-### 2. Create Virtual Environment
-
-```bash
-python -m venv venv
-```
-
-### 3. Activate Environment
-
-Windows:
-
-```bash
-venv\Scripts\activate
-```
-
-Linux/Mac:
-
-```bash
-source venv/bin/activate
-```
-
-### 4. Install Dependencies
+The AI prediction feature is a core product capability, not an optional extra. Install the full ML stack before running the dashboard or simulation flows:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 5. Apply Migrations
+This includes Django, PostgreSQL driver support, NumPy, PyTorch, and scikit-learn so the local pickle-based prediction pipeline can load correctly.
+
+---
+
+# Supabase Database Setup
+
+1. Create or open a Supabase project.
+2. In Supabase, open **Connect** and copy the Postgres connection string.
+3. For local Django development, prefer the **Session pooler** URL because it works on IPv4 networks.
+4. Copy `.env.example` to `.env`.
+5. Set `DATABASE_URL` in `.env`:
+   `DATABASE_URL=postgresql://postgres.<PROJECT_REF>:<PASSWORD>@aws-<REGION>.pooler.supabase.com:5432/postgres?sslmode=require`
+
+SQLite is intentionally disabled. If `DATABASE_URL` is missing or points to SQLite, Django raises a setup error before startup.
+
+---
+
+# Apply Database Migrations
 
 ```bash
-python backend/manage.py migrate
+python manage.py migrate
 ```
 
-### 6. Run Development Server
+---
+
+# Seed the Database
+
+Run the following commands **in the given order**:
+
 
 ```bash
-python backend/manage.py runserver
+cd backend
+
+```
+```bash
+python manage.py seed_master_data
+```
+
+```bash
+python manage.py seed_routes
+```
+
+```bash
+python manage.py seed_sensors
+```
+
+```bash
+python manage.py seed_demo_data
+```
+
+```bash
+python manage.py seed_users
+```
+
+These commands populate the database with sample railway assets, routes, sensors, alerts, and tickets.
+
+---
+
+# Run the Development Server
+
+```bash
+python manage.py runserver
+```
+
+The application will start at:
+
+```
+http://127.0.0.1:8000/
 ```
 
 ---
 
-## Future Roadmap
+# Available Pages
 
-### Phase 2
-
-* PostgreSQL migration
-* Real-time data ingestion
-* Advanced analytics pipeline
-* Improved geospatial intelligence
-
-### Phase 3
-
-* Autonomous AI agents
-* Predictive maintenance recommendations
-* Real-time anomaly detection
-* Large-scale railway deployment readiness
+- Dashboard
+- Alerts
+- Tickets
+- Railway Map
+- Simulation (staff-only — live synthetic IoT telemetry generator with Grok / Gemini / Anthropic / OpenAI / Physics RNG)
+- Sensors
 
 ---
 
-## Team Contributions
+# Live Simulation & AI Generator Setup
 
-### Backend Development
+The Simulation feature (`/simulation/`) generates a fresh 16-reading IoT sensor journey on demand and feeds it into the live Rakshak prediction pipeline.
 
-* Database design
-* API development
-* Django architecture
-
-### Frontend Development
-
-* Dashboard UI
-* Ticket management interface
-* Mapping interface
-
-### Data & Analytics
-
-* Sensor data modeling
-* Prediction framework
-* Alert intelligence architecture
+To power scenario generation using **xAI Grok API**:
+1. Obtain an API key from [xAI Console](https://console.x.ai/).
+2. Add your key to `.env`:
+   ```bash
+   GROK_API_KEY=xai-your-key-here
+   GROK_MODEL=grok-2-latest
+   ```
+3. Fallback support is built-in: if Grok is unreachable or unconfigured, the system seamlessly tries Gemini, Anthropic, OpenAI, Ollama, and finally the dynamic physics-based IoT RNG engine.
 
 ---
 
-## Impact
+# Deployment
 
-Rakshak aims to improve railway safety, operational visibility, and maintenance efficiency by providing a centralized platform capable of supporting future AI-driven predictive maintenance systems.
+For production deployments, the application relies on environment variables.
+Ensure the deployment platform provides at minimum:
+- `DATABASE_URL`
+- `SECRET_KEY`
+- `DEBUG` (set to `False`)
+- `ALLOWED_HOSTS`
 
 ---
 
-## License
+# API
 
-This project was developed as part of a hackathon/research prototype and is intended for demonstration and educational purposes.
+The project also exposes REST API endpoints through Django REST Framework for dashboard data and railway resources.
+
+---
+
+# Demo Data
+
+The repository includes management commands that automatically generate realistic demo data for:
+
+- Railway Routes
+- Stations
+- Sensors
+- Maintenance Alerts
+- Tickets
+- Assets
+
+No manual database setup is required after running the seed commands.
+
+---
+
+# Deployment
+
+Set the following environment variables in production or local development:
+
+```bash
+export DATABASE_URL="postgresql://postgres.<PROJECT_REF>:<PASSWORD>@aws-<REGION>.pooler.supabase.com:5432/postgres?sslmode=require"
+export SECRET_KEY="change-me-in-production"
+export DEBUG="False"
+export ALLOWED_HOSTS="localhost,127.0.0.1"
+```
+
+`DATABASE_URL` is required at runtime. `DEBUG` and `ALLOWED_HOSTS` are read from environment variables and fall back to local development defaults when unset.
+
+---
+
+# Development Workflow
+
+Whenever database models are modified:
+
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+If demo data needs to be regenerated, rerun the seed commands:
+
+```bash
+python manage.py seed_master_data
+python manage.py seed_routes
+python manage.py seed_sensors
+python manage.py seed_demo_data
+python manage.py seed_users
+```
+
+---
+
+# License
+
+This project is intended as a prototype for demonstration and educational purposes.

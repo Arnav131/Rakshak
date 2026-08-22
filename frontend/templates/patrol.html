@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/patrol.css' %}?v=1">
+{% endblock %}
+
+{% block content %}
+<div class="patrol-container">
+
+    <!-- Header Banner -->
+    <div class="patrol-header-banner">
+        <div style="display:flex;flex-direction:column;gap:0.35rem;">
+            <div class="patrol-header-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9a24a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 3h5v5M8 3H3v5M3 16v5h5M16 21h5v-5"></path><circle cx="12" cy="12" r="4"></circle>
+                </svg>
+                Track Keyman Patrol Inspection
+                <span class="patrol-badge">RDSO Standard</span>
+            </div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);">
+                Indian Railways Permanent Way Manual (IRPWM) — On-Ground Case-Isolated Inspection Protocol
+            </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+            <div style="text-align:right;">
+                <div style="font-size:0.85rem;font-weight:600;color:var(--text-primary);">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div style="font-size:0.75rem;color:var(--text-tertiary);">{% if is_patrol_worker %}Patrol Worker{% else %}Authorized Controller{% endif %}</div>
+            </div>
+            <div class="avatar" style="width:36px;height:36px;font-size:0.9rem;">{{ request.user.username|first|upper }}</div>
+        </div>
+    </div>
+
+    <!-- Step 1: Select Track Section & Start Patrol -->
+    <div class="patrol-section-card">
+        <div class="card-title-bar">
+            <div class="card-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Step 1: Initiate Isolated Patrol Session
+            </div>
+            <span class="patrol-badge">Separation Logic Enforced</span>
+        </div>
+
+        <div class="form-group-row">
+            <div class="form-field" style="flex:2;">
+                <label class="form-label" for="select-track-section">Assigned Track Section (Station A → Station B)</label>
+                <select class="form-select" id="select-track-section">
+                    <option value="" disabled selected>-- Select Corridor Track Section --</option>
+                </select>
+            </div>
+
+            <button type="button" class="btn-primary" id="btn-start-patrol" style="height:42px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                Start Inspection
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Patrol Status Banner (Hidden initially) -->
+    <div id="active-patrol-banner" class="patrol-header-banner" style="display:none;background:rgba(16, 185, 129, 0.08);border-color:rgba(16, 185, 129, 0.35);">
+        <div style="display:flex;align-items:center;gap:1rem;">
+            <div class="dot-live" style="width:12px;height:12px;background:#10b981;box-shadow:0 0 8px #10b981;"></div>
+            <div>
+                <div style="font-size:0.8rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;">Active Case Code</div>
+                <div id="display-patrol-code" class="mono" style="font-size:1.2rem;font-weight:700;color:var(--emerald-soft);">PTR-XXXX-XXXX</div>
+            </div>
+        </div>
+
+        <div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;">Inspecting Corridor</div>
+            <div id="display-patrol-section" style="font-size:1rem;font-weight:600;color:var(--text-primary);">--</div>
+        </div>
+
+        <div class="patrol-badge patrol-badge-green">Inspection In Progress</div>
+    </div>
+
+    <!-- Step 2: 8 RDSO Category Inspection Form -->
+    <div id="inspection-form-container" style="display:none;display:flex;flex-direction:column;gap:1.25rem;">
+        <div class="patrol-section-card">
+            <div class="card-title-bar">
+                <div class="card-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    Step 2: RDSO Keyman 8-Category Evaluation
+                </div>
+
+                <!-- Quick Presets -->
+                <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                    <span style="font-size:0.75rem;color:var(--text-tertiary);text-transform:uppercase;">Quick Presets:</span>
+                    <button type="button" class="btn-secondary" id="btn-preset-nominal">All 5/5 (Nominal)</button>
+                    <button type="button" class="btn-secondary" id="btn-preset-good">All 4/5 (Good)</button>
+                    <button type="button" class="btn-secondary" id="btn-preset-degraded">Minor Defects (2-3/5)</button>
+                </div>
+            </div>
+
+            <!-- 8 RDSO Categories Grid -->
+            <div class="category-ratings-grid">
+                {% for cat in categories %}
+                <div class="category-card">
+                    <div class="category-card-header">
+                        <div class="category-title-wrap">
+                            <span class="category-name">{{ cat.label }}</span>
+                            <span class="category-desc">{{ cat.desc }}</span>
+                        </div>
+                        <span class="rating-badge rating-5" id="badge-{{ cat.value }}">Excellent (5/5)</span>
+                    </div>
+
+                    <div class="rating-slider-wrap">
+                        <input type="range" class="rating-slider" min="1" max="5" step="1" value="5"
+                               data-category="{{ cat.value }}" id="slider-{{ cat.value }}">
+                        <div class="rating-ticks">
+                            <span>1 (Critical)</span>
+                            <span>2 (Poor)</span>
+                            <span>3 (Fair)</span>
+                            <span>4 (Good)</span>
+                            <span>5 (Excellent)</span>
+                        </div>
+                    </div>
+
+                    <div class="form-field" style="margin-top:0.3rem;">
+                        <input type="text" class="form-input" id="notes-{{ cat.value }}"
+                               placeholder="Observation notes (e.g. alignment tight, bolts torqued)..."
+                               style="font-size:0.8rem;padding:0.45rem 0.65rem;">
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Submit Section -->
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-top:1rem;border-top:1px solid var(--border-subtle);padding-top:1.25rem;">
+                <div style="font-size:0.825rem;color:var(--text-secondary);">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    Submitting will normalize the 8 ratings to a 0–100 score and trigger automated post-inspection IoT telemetry & AI inference.
+                </div>
+
+                <button type="button" class="btn-primary" id="btn-submit-ratings" style="padding:0.75rem 2rem;font-size:0.95rem;">
+                    Submit Inspection Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post-Submission Results Card (Hidden initially) -->
+    <div id="submission-result-card" class="patrol-section-card" style="display:none;background:linear-gradient(160deg, rgba(20, 35, 25, 0.7) 0%, rgba(14, 20, 18, 0.6) 100%);border-color:rgba(16, 185, 129, 0.3);">
+        <div class="card-title-bar">
+            <div class="card-title" style="color:var(--emerald-soft);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                Inspection Report Submitted & AI Telemetry Synthesized
+            </div>
+            <span class="patrol-badge patrol-badge-green" id="res-patrol-code">PTR-XXXX-XXXX</span>
+        </div>
+
+        <div class="patrol-kpi-grid">
+            <div class="patrol-kpi-card">
+                <div class="kpi-icon-wrap" style="color:var(--gold-soft);">👷</div>
+                <div class="kpi-data">
+                    <div class="kpi-value" id="res-worker-score">--</div>
+                    <div class="kpi-label">Worker Score (0-100)</div>
+                </div>
+            </div>
+
+            <div class="patrol-kpi-card">
+                <div class="kpi-icon-wrap" style="color:#38bdf8;">📡</div>
+                <div class="kpi-data">
+                    <div class="kpi-value" id="res-iot-score">--</div>
+                    <div class="kpi-label">IoT Sensor Score (0-100)</div>
+                </div>
+            </div>
+
+            <div class="patrol-kpi-card">
+                <div class="kpi-icon-wrap" style="color:var(--emerald-soft);">⚖️</div>
+                <div class="kpi-data">
+                    <div class="kpi-value" id="res-composite-score">--</div>
+                    <div class="kpi-label">Composite Health Score</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.06);">
+            <div id="res-conflict-badge" class="patrol-badge">--</div>
+            <div style="font-size:0.825rem;color:var(--text-secondary);">
+                Report dispatched to Railway Operations Controller for Go/No-Go Decision.
+            </div>
+        </div>
+    </div>
+
+    <!-- My Patrol History Table -->
+    <div class="patrol-section-card">
+        <div class="card-title-bar">
+            <div class="card-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Recent Patrol Reports
+            </div>
+            <button type="button" class="btn-secondary" onclick="reloadMyPatrols()" style="font-size:0.75rem;padding:0.3rem 0.6rem;">
+                Refresh History
+            </button>
+        </div>
+
+        <div class="patrol-table-wrap">
+            <table class="patrol-table">
+                <thead>
+                    <tr>
+                        <th>Patrol Code</th>
+                        <th>Corridor Route</th>
+                        <th>Worker Score</th>
+                        <th>IoT Score</th>
+                        <th>Composite</th>
+                        <th>Status</th>
+                        <th>Submitted At</th>
+                    </tr>
+                </thead>
+                <tbody id="my-patrols-tbody">
+                    <!-- Populated dynamically via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Embedded JSON Data for JS initialization -->
+<script id="sections-data" type="application/json">{{ sections_json|safe }}</script>
+<script id="my-patrols-data" type="application/json">{{ my_patrols_json|safe }}</script>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/patrol.js' %}?v=1"></script>
+<script>
+    // Populate track sections selector from JSON
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            const raw = document.getElementById('sections-data').textContent;
+            const sections = JSON.parse(raw);
+            const select = document.getElementById('select-track-section');
+            if (select && sections.length > 0) {
+                sections.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.code} : ${s.start} → ${s.end} (${s.length_km} km)`;
+                    select.appendChild(opt);
+                });
+            }
+
+            const rawPatrols = document.getElementById('my-patrols-data').textContent;
+            const patrols = JSON.parse(rawPatrols);
+            renderPatrolTable(patrols);
+        } catch (e) {
+            console.error("Init data load error:", e);
+        }
+    });
+</script>
+{% endblock %}

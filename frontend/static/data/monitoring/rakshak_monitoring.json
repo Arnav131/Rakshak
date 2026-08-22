@@ -1,0 +1,46 @@
+{
+  "critical_asset": {
+    "sensor_id": "VIB-04A",
+    "zone": "ZONE 04",
+    "status": "CRITICAL",
+    "reading": "5.8 mm/s",
+    "failure_risk": "92%",
+    "position": {
+      "lat": 13.0827,
+      "lng": 80.2707
+    },
+    "affected_track_id": "osm-rail-177",
+    "waveform": [
+      1.2,
+      1.1,
+      1.3,
+      1.2,
+      1.4,
+      1.2,
+      1.1,
+      1.5,
+      3.8,
+      5.8,
+      5.4,
+      4.9,
+      3.2,
+      1.8,
+      1.3,
+      1.2
+    ],
+    "maintenance_history": [
+      "\u2022 Inspection completed",
+      "\u2022 Sensor calibrated",
+      "\u2022 Fastening checked"
+    ],
+    "action_required": "IMMEDIATE INSPECTION"
+  },
+  "monitored_tracks": {
+    "osm-rail-177": "critical",
+    "osm-rail-191": "warning",
+    "osm-rail-127": "warning",
+    "osm-rail-101": "healthy",
+    "osm-rail-156": "healthy",
+    "osm-rail-151": "healthy"
+  }
+}

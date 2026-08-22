@@ -1,0 +1,585 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "osm-node-4000",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.2195,
+          28.6143
+        ]
+      },
+      "properties": {
+        "osm_id": 4000,
+        "name": "New Delhi Railway Station",
+        "ref": "NDLS",
+        "operator": "Northern Railway",
+        "railway": "station",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4001",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          76.78,
+          30.38
+        ]
+      },
+      "properties": {
+        "osm_id": 4001,
+        "name": "Ambala Cantt Junction",
+        "ref": "UMB",
+        "operator": "Northern Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4002",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.85,
+          30.9
+        ]
+      },
+      "properties": {
+        "osm_id": 4002,
+        "name": "Ludhiana Junction",
+        "ref": "LDH",
+        "operator": "Northern Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4003",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.58,
+          31.32
+        ]
+      },
+      "properties": {
+        "osm_id": 4003,
+        "name": "Jalandhar City",
+        "ref": "JUC",
+        "operator": "Northern Railway",
+        "railway": "station",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4004",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          74.87,
+          31.63
+        ]
+      },
+      "properties": {
+        "osm_id": 4004,
+        "name": "Amritsar Junction",
+        "ref": "ASR",
+        "operator": "Northern Railway",
+        "railway": "station",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4005",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          74.87,
+          32.7266
+        ]
+      },
+      "properties": {
+        "osm_id": 4005,
+        "name": "Jammu Tawi",
+        "ref": "JAT",
+        "operator": "Northern Railway",
+        "railway": "station",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4006",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.9462,
+          26.8467
+        ]
+      },
+      "properties": {
+        "osm_id": 4006,
+        "name": "Lucknow Charbagh",
+        "ref": "LKO",
+        "operator": "Northern Railway",
+        "railway": "station",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4007",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.3318,
+          26.4499
+        ]
+      },
+      "properties": {
+        "osm_id": 4007,
+        "name": "Kanpur Central",
+        "ref": "CNB",
+        "operator": "North Central Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4008",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.8463,
+          25.4358
+        ]
+      },
+      "properties": {
+        "osm_id": 4008,
+        "name": "Prayagraj Junction",
+        "ref": "PRYJ",
+        "operator": "North Central Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4009",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          83.12,
+          25.28
+        ]
+      },
+      "properties": {
+        "osm_id": 4009,
+        "name": "Pt. Deen Dayal Upadhyaya Junction",
+        "ref": "DDU",
+        "operator": "East Central Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4010",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.7873,
+          26.9124
+        ]
+      },
+      "properties": {
+        "osm_id": 4010,
+        "name": "Jaipur Junction",
+        "ref": "JP",
+        "operator": "North Western Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4011",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.5714,
+          23.0225
+        ]
+      },
+      "properties": {
+        "osm_id": 4011,
+        "name": "Ahmedabad Junction",
+        "ref": "ADI",
+        "operator": "Western Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4012",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          73.1812,
+          22.3072
+        ]
+      },
+      "properties": {
+        "osm_id": 4012,
+        "name": "Vadodara Junction",
+        "ref": "BRC",
+        "operator": "Western Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4013",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.8311,
+          21.1702
+        ]
+      },
+      "properties": {
+        "osm_id": 4013,
+        "name": "Surat",
+        "ref": "ST",
+        "operator": "Western Railway",
+        "railway": "station",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4014",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.8358,
+          18.94
+        ]
+      },
+      "properties": {
+        "osm_id": 4014,
+        "name": "Mumbai CSMT",
+        "ref": "CSMT",
+        "operator": "Central Railway",
+        "railway": "station",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4015",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          73.8567,
+          18.5204
+        ]
+      },
+      "properties": {
+        "osm_id": 4015,
+        "name": "Pune Junction",
+        "ref": "PUNE",
+        "operator": "Central Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4016",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.4126,
+          23.2599
+        ]
+      },
+      "properties": {
+        "osm_id": 4016,
+        "name": "Bhopal Junction",
+        "ref": "BPL",
+        "operator": "West Central Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4017",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.0882,
+          21.1458
+        ]
+      },
+      "properties": {
+        "osm_id": 4017,
+        "name": "Nagpur Junction",
+        "ref": "NGP",
+        "operator": "Central Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4018",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          85.1376,
+          25.5941
+        ]
+      },
+      "properties": {
+        "osm_id": 4018,
+        "name": "Patna Junction",
+        "ref": "PNBE",
+        "operator": "East Central Railway",
+        "railway": "station",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4019",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.3639,
+          22.5726
+        ]
+      },
+      "properties": {
+        "osm_id": 4019,
+        "name": "Howrah Junction",
+        "ref": "HWH",
+        "operator": "Eastern Railway",
+        "railway": "station",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4020",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          85.8245,
+          20.2961
+        ]
+      },
+      "properties": {
+        "osm_id": 4020,
+        "name": "Bhubaneswar",
+        "ref": "BBS",
+        "operator": "East Coast Railway",
+        "railway": "station",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4021",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          91.7362,
+          26.1445
+        ]
+      },
+      "properties": {
+        "osm_id": 4021,
+        "name": "Guwahati",
+        "ref": "GHY",
+        "operator": "Northeast Frontier Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4022",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          83.2185,
+          17.6868
+        ]
+      },
+      "properties": {
+        "osm_id": 4022,
+        "name": "Visakhapatnam Junction",
+        "ref": "VSKP",
+        "operator": "East Coast Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4023",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.648,
+          16.5062
+        ]
+      },
+      "properties": {
+        "osm_id": 4023,
+        "name": "Vijayawada Junction",
+        "ref": "BZA",
+        "operator": "South Central Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4024",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          78.55,
+          17.45
+        ]
+      },
+      "properties": {
+        "osm_id": 4024,
+        "name": "Secunderabad Junction",
+        "ref": "SC",
+        "operator": "South Central Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4025",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.2707,
+          13.0827
+        ]
+      },
+      "properties": {
+        "osm_id": 4025,
+        "name": "Chennai Central",
+        "ref": "MAS",
+        "operator": "Southern Railway",
+        "railway": "station",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4026",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.5946,
+          12.9716
+        ]
+      },
+      "properties": {
+        "osm_id": 4026,
+        "name": "KSR Bengaluru City",
+        "ref": "SBC",
+        "operator": "South Western Railway",
+        "railway": "station",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4027",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          76.28,
+          9.98
+        ]
+      },
+      "properties": {
+        "osm_id": 4027,
+        "name": "Ernakulam Junction",
+        "ref": "ERS",
+        "operator": "Southern Railway",
+        "railway": "junction",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-node-4028",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          76.95,
+          8.48
+        ]
+      },
+      "properties": {
+        "osm_id": 4028,
+        "name": "Thiruvananthapuram Central",
+        "ref": "TVC",
+        "operator": "Southern Railway",
+        "railway": "station",
+        "gauge": "1676 mm",
+        "electrified": "contact_line"
+      }
+    }
+  ]
+}

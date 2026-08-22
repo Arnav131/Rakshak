@@ -1,0 +1,1508 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+/* ============================================================
+   FLIGHT-DECK ROUTE DEPARTURE CLEARANCE CENTER (NASA STYLE)
+   ============================================================ */
+:root {
+    --fd-bg-dark: #070a12;
+    --fd-panel-bg: rgba(13, 19, 33, 0.85);
+    --fd-panel-border: rgba(56, 189, 248, 0.18);
+    --fd-green: #10b981;
+    --fd-green-glow: rgba(16, 185, 129, 0.4);
+    --fd-red: #ef4444;
+    --fd-red-glow: rgba(239, 68, 68, 0.4);
+    --fd-amber: #f59e0b;
+    --fd-cyan: #06b6d4;
+    --fd-cyan-glow: rgba(6, 182, 212, 0.35);
+}
+
+.readiness-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding-bottom: 3rem;
+    color: #e2e8f0;
+}
+
+/* Master Flight-Deck HUD Banner */
+.flightdeck-hud-banner {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(6, 18, 36, 0.95) 100%);
+    border: 1px solid var(--fd-panel-border);
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.hud-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.hud-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #f8fafc;
+    font-family: 'Inter', sans-serif;
+}
+
+.hud-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 0.2rem 0.55rem;
+    background: rgba(6, 182, 212, 0.15);
+    border: 1px solid rgba(6, 182, 212, 0.4);
+    color: var(--fd-cyan);
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.hud-subtitle {
+    font-size: 0.825rem;
+    color: #94a3b8;
+}
+
+.hud-clock-panel {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.clock-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.clock-label {
+    font-size: 0.65rem;
+    color: #64748b;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.clock-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--fd-cyan);
+}
+
+/* Annunciator KPI Strip */
+.annunciator-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1rem;
+}
+
+.annunciator-cell {
+    background: var(--fd-panel-bg);
+    border: 1px solid var(--fd-panel-border);
+    border-radius: 12px;
+    padding: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.annunciator-cell::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+}
+
+.annunciator-cell--total::before { background: var(--fd-cyan); }
+.annunciator-cell--go::before { background: var(--fd-green); box-shadow: 0 0 10px var(--fd-green); }
+.annunciator-cell--hold::before { background: var(--fd-red); box-shadow: 0 0 10px var(--fd-red); }
+.annunciator-cell--sync::before { background: #818cf8; }
+
+.annunciator-val {
+    font-size: 1.85rem;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1;
+}
+
+.annunciator-lbl {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    text-transform: uppercase;
+}
+
+/* Controls Bar */
+.control-bar {
+    background: var(--fd-panel-bg);
+    border: 1px solid var(--fd-panel-border);
+    border-radius: 12px;
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.train-selector-tabs {
+    display: flex;
+    gap: 0.6rem;
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
+}
+
+.train-tab-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    font-size: 0.825rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.train-tab-btn:hover {
+    color: #f8fafc;
+    border-color: var(--fd-cyan);
+    background: rgba(6, 182, 212, 0.08);
+}
+
+.train-tab-btn.active {
+    background: rgba(6, 182, 212, 0.18);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.5);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+}
+
+.status-beacon {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.beacon-go { background: var(--fd-green); box-shadow: 0 0 8px var(--fd-green); }
+.beacon-hold { background: var(--fd-red); box-shadow: 0 0 8px var(--fd-red); }
+.beacon-caution { background: var(--fd-amber); box-shadow: 0 0 8px var(--fd-amber); }
+
+.control-actions-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.worker-terminal-btn {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    color: #c084fc;
+    padding: 0.5rem 0.95rem;
+    border-radius: 8px;
+    font-size: 0.825rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: all 0.2s;
+}
+
+.worker-terminal-btn:hover {
+    background: rgba(168, 85, 247, 0.35);
+    color: #ffffff;
+    box-shadow: 0 0 14px rgba(168, 85, 247, 0.4);
+}
+
+.view-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.825rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s;
+}
+
+.view-btn.active {
+    background: var(--fd-cyan);
+    color: #0f172a;
+    border-color: var(--fd-cyan);
+    font-weight: 700;
+}
+
+/* Layout Containers */
+.readiness-container {
+    display: grid;
+    gap: 1.5rem;
+}
+.readiness-container--single { grid-template-columns: 1fr; }
+.readiness-container--split { grid-template-columns: 1fr 1fr; }
+
+@media (max-width: 1100px) {
+    .readiness-container--split { grid-template-columns: 1fr; }
+}
+
+/* Flight-Deck Departure Clearance Card */
+.departure-card {
+    background: var(--fd-panel-bg);
+    border: 1px solid var(--fd-panel-border);
+    border-radius: 16px;
+    padding: 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    position: relative;
+}
+
+.departure-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 1.25rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.train-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.badge-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.case-id-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    background: rgba(6, 182, 212, 0.15);
+    color: var(--fd-cyan);
+    border-radius: 4px;
+    border: 1px solid rgba(6, 182, 212, 0.35);
+}
+
+.train-num-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    background: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+    border-radius: 4px;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.train-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin: 0;
+    letter-spacing: 0.02em;
+}
+
+.train-subtitle {
+    font-size: 0.85rem;
+    color: #94a3b8;
+}
+
+/* Master Go / No-Go Clearance Light */
+.master-clearance-light {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.4rem;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 1.05rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.clearance-go {
+    background: rgba(16, 185, 129, 0.18);
+    color: #10b981;
+    border: 2px solid #10b981;
+    box-shadow: 0 0 24px rgba(16, 185, 129, 0.4), inset 0 0 12px rgba(16, 185, 129, 0.2);
+    animation: pulseGo 2s infinite ease-in-out;
+}
+
+.clearance-nogo {
+    background: rgba(239, 68, 68, 0.18);
+    color: #ef4444;
+    border: 2px solid #ef4444;
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.4), inset 0 0 12px rgba(239, 68, 68, 0.2);
+    animation: pulseHold 2.5s infinite ease-in-out;
+}
+
+.clearance-caution {
+    background: rgba(245, 158, 11, 0.18);
+    color: #f59e0b;
+    border: 2px solid #f59e0b;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
+}
+
+@keyframes pulseGo {
+    0%, 100% { box-shadow: 0 0 16px rgba(16, 185, 129, 0.3); }
+    50% { box-shadow: 0 0 28px rgba(16, 185, 129, 0.6); }
+}
+
+@keyframes pulseHold {
+    0%, 100% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.3); }
+    50% { box-shadow: 0 0 28px rgba(239, 68, 68, 0.6); }
+}
+
+/* Flight-Deck Telemetry HUD Grid */
+.telemetry-radar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.75rem;
+}
+
+.telemetry-cell {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.telemetry-cell-label {
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.telemetry-cell-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.telemetry-cell-status {
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.text-pass { color: var(--fd-green); }
+.text-fail { color: var(--fd-red); }
+
+/* Checklist Section (3-Pillar Pre-Flight Architecture) */
+.checklist-section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.checklist-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.flightdeck-checklist-card {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 0.9rem 1.1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.25s ease;
+}
+
+.flightdeck-checklist-card--passed {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.04);
+}
+
+.flightdeck-checklist-card--failed {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.04);
+}
+
+.checklist-main-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.checklist-pillar-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pillar-icon {
+    font-size: 1rem;
+}
+
+.worker-sync-tag {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.worker-sync-tag strong {
+    color: #38bdf8;
+}
+
+.checklist-actions-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+}
+
+.tick-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.3rem 0.65rem;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.tick-badge--passed {
+    background: rgba(16, 185, 129, 0.18);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.tick-badge--pending {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.tick-badge--failed {
+    background: rgba(239, 68, 68, 0.18);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.btn-worker-sign {
+    background: rgba(6, 182, 212, 0.12);
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    color: var(--fd-cyan);
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-worker-sign:hover {
+    background: var(--fd-cyan);
+    color: #0f172a;
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+}
+
+/* Controller Master Clearance Switchboard */
+.controller-switchboard {
+    background: rgba(10, 15, 29, 0.75);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 12px;
+    padding: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.switchboard-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.clearance-buttons-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .clearance-buttons-group { grid-template-columns: 1fr; }
+}
+
+.btn-master-action {
+    padding: 0.85rem 0.65rem;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.btn-master-go {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(6, 182, 212, 0.25) 100%);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.6);
+}
+.btn-master-go:hover {
+    background: #10b981;
+    color: #07080d;
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
+    transform: translateY(-1px);
+}
+
+.btn-master-caution {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.5);
+}
+.btn-master-caution:hover {
+    background: #f59e0b;
+    color: #07080d;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-master-hold {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.5);
+}
+.btn-master-hold:hover {
+    background: #ef4444;
+    color: #ffffff;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+    transform: translateY(-1px);
+}
+
+/* Official Railway Flight-Deck Seal */
+.flightdeck-seal {
+    border: 2px dashed #10b981;
+    background: rgba(16, 185, 129, 0.06);
+    border-radius: 10px;
+    padding: 0.9rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.seal-info {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+    color: #34d399;
+    line-height: 1.5;
+}
+
+/* Audit Log Stream */
+.flightdeck-audit-trail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 130px;
+    overflow-y: auto;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+}
+
+.audit-row {
+    color: #94a3b8;
+    padding: 0.2rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.audit-row span {
+    color: var(--fd-cyan);
+}
+
+/* Worker Modal */
+.worker-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.worker-modal-card {
+    background: #0f172a;
+    border: 1px solid var(--fd-panel-border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 520px;
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(6, 182, 212, 0.15);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.form-group-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.form-group-field label {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.form-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    color: #f8fafc;
+    font-size: 0.88rem;
+    font-family: inherit;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--fd-cyan);
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+}
+
+.btn-transmit-signal {
+    background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+    color: #07080d;
+    border: none;
+    border-radius: 8px;
+    padding: 0.85rem 1.25rem;
+    font-weight: 800;
+    font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.btn-transmit-signal:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+}
+
+/* Toast */
+.toast-msg {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: #0f172a;
+    color: #ffffff;
+    border: 1px solid var(--fd-cyan);
+    padding: 0.85rem 1.4rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    z-index: 99999;
+    display: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="readiness-page">
+
+    <!-- ============================================================= -->
+    <!-- MASTER FLIGHT-DECK HUD BANNER                                 -->
+    <!-- ============================================================= -->
+    <header class="flightdeck-hud-banner">
+        <div class="hud-title-wrap">
+            <div class="hud-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--fd-cyan)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                RAKSHAK // FLIGHT-DECK ROUTE DEPARTURE CLEARANCE
+                <span class="hud-tag">PLAN 4 FLIGHT-DECK</span>
+            </div>
+            <div class="hud-subtitle">
+                Indian Railways Automated Operations Control Center • Real-Time Pre-Departure Safety Gate
+            </div>
+        </div>
+
+        <div class="hud-clock-panel">
+            <div class="clock-item">
+                <span class="clock-label">SYS UTC/IST</span>
+                <span class="clock-value" id="hud-clock">--:--:--</span>
+            </div>
+            <div class="clock-item">
+                <span class="clock-label">TELEMETRY LINK</span>
+                <span class="clock-value" style="color: #10b981; font-size: 0.85rem; display: flex; align-items: center; gap: 4px;">
+                    <span class="status-beacon beacon-go"></span> SYNCED
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ============================================================= -->
+    <!-- ANNUNCIATOR KPI STATUS STRIP                                  -->
+    <!-- ============================================================= -->
+    <section class="annunciator-strip">
+        <div class="annunciator-cell annunciator-cell--total">
+            <div class="annunciator-val" id="kpi-total" style="color: var(--fd-cyan);">{{ summary.total }}</div>
+            <div class="annunciator-lbl">Active Departure Gates</div>
+        </div>
+        <div class="annunciator-cell annunciator-cell--go">
+            <div class="annunciator-val" style="color: #10b981;" id="kpi-ready">{{ summary.ready }}</div>
+            <div class="annunciator-lbl">Cleared for Departure (GO)</div>
+        </div>
+        <div class="annunciator-cell annunciator-cell--hold">
+            <div class="annunciator-val" style="color: #ef4444;" id="kpi-hold">{{ summary.hold }}</div>
+            <div class="annunciator-lbl">Held at Platform (NO-GO)</div>
+        </div>
+        <div class="annunciator-cell annunciator-cell--sync">
+            <div class="annunciator-val" style="color: #818cf8;" id="kpi-sync">100%</div>
+            <div class="annunciator-lbl">Interlocking Sync State</div>
+        </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- FLIGHT-DECK CONTROLS & TRAIN SELECTOR                         -->
+    <!-- ============================================================= -->
+    <section class="control-bar">
+        <div class="train-selector-tabs" id="case-selector-bar">
+            <!-- Dynamically populated by JS -->
+        </div>
+
+        <div class="control-actions-right">
+            <button class="worker-terminal-btn" id="btn-open-worker-modal" onclick="openWorkerModal()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                👷 Worker Field Terminal
+            </button>
+            <button class="view-btn active" id="btn-single-view" onclick="setViewMode('single')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+                Flight-Deck View
+            </button>
+            <button class="view-btn" id="btn-split-view" onclick="setViewMode('split')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="18" rx="1"></rect><rect x="13" y="3" width="8" height="18" rx="1"></rect></svg>
+                ⚖️ Split Compare
+            </button>
+        </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- DYNAMIC MAIN DEPARTURE VIEW (SINGLE OR SPLIT)                 -->
+    <!-- ============================================================= -->
+    <main class="readiness-container readiness-container--single" id="readiness-main-container">
+        <!-- Rendered dynamically by JavaScript -->
+    </main>
+
+</div>
+
+<!-- ============================================================= -->
+    <!-- WORKER FIELD VERIFICATION TERMINAL MODAL                      -->
+<!-- ============================================================= -->
+<div class="worker-modal-backdrop" id="worker-modal-backdrop">
+    <div class="worker-modal-card">
+        <div class="modal-header">
+            <div class="modal-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--fd-cyan)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                Field Worker Verification Terminal
+            </div>
+            <button class="modal-close-btn" onclick="closeWorkerModal()">&times;</button>
+        </div>
+
+        <div class="form-group-field">
+            <label for="modal-select-case">Target Train / Departure Gate</label>
+            <select class="form-input" id="modal-select-case" onchange="populateModalChecklistOptions()">
+                <!-- Populated by JS -->
+            </select>
+        </div>
+
+        <div class="form-group-field">
+            <label for="modal-select-item">Pre-Flight Checklist Pillar</label>
+            <select class="form-input" id="modal-select-item">
+                <!-- Populated by JS -->
+            </select>
+        </div>
+
+        <div class="form-group-field">
+            <label for="modal-worker-role">Field Officer Designation</label>
+            <select class="form-input" id="modal-worker-role">
+                <option value="Station Master (NDLS Platform Control)">Station Master (NDLS Platform Control)</option>
+                <option value="Chief Signal Inspector (Section Interlocking)">Chief Signal Inspector (Section Interlocking)</option>
+                <option value="Field Track Inspector (Ultrasonic & P-Way)">Field Track Inspector (Ultrasonic & P-Way)</option>
+                <option value="Traction Power Controller (25kV OHE)">Traction Power Controller (25kV OHE)</option>
+                <option value="Loco Pilot In-Charge (Kavach Cab ATP)">Loco Pilot In-Charge (Kavach Cab ATP)</option>
+            </select>
+        </div>
+
+        <div class="form-group-field">
+            <label for="modal-worker-status">Verification Status Signal</label>
+            <select class="form-input" id="modal-worker-status">
+                <option value="passed">🟢 PASSED & VERIFIED (Condition Nominal)</option>
+                <option value="failed">🔴 FAILED / SAFETY CONFLICT (Hold Enforced)</option>
+            </select>
+        </div>
+
+        <div class="form-group-field">
+            <label for="modal-worker-notes">Inspection / Telemetry Memo</label>
+            <input type="text" class="form-input" id="modal-worker-notes" placeholder="e.g. Physical track inspection verified nominal. Interlocking locked." value="Physical check verified on site. Interlocking synced.">
+        </div>
+
+        <button class="btn-transmit-signal" id="btn-modal-transmit" onclick="submitModalSignOff()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            ⚡ TRANSMIT SIGNAL & VERIFY CHECK
+        </button>
+    </div>
+</div>
+
+<!-- Toast notification element -->
+<div class="toast-msg" id="readiness-toast"></div>
+
+<!-- JSON Data from Django View -->
+<script id="readiness-cases-data" type="application/json">
+{{ cases_json|safe }}
+</script>
+
+<script>
+// ===========================================================================
+// FLIGHT-DECK ROUTE DEPARTURE CLEARANCE ENGINE (PLAN 4)
+// ===========================================================================
+'use strict';
+
+let casesData = JSON.parse(document.getElementById('readiness-cases-data').textContent);
+let currentViewMode = 'single'; // 'single' or 'split'
+let activeCaseCodeA = casesData.length > 0 ? casesData[0].case_code : null;
+let activeCaseCodeB = casesData.length > 1 ? casesData[1].case_code : (casesData.length > 0 ? casesData[0].case_code : null);
+
+// Check query param e.g. /readiness/?case=OPR-DEP-12951
+(function checkQueryParam() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const caseParam = urlParams.get('case');
+    if (caseParam && casesData.some(c => c.case_code === caseParam)) {
+        activeCaseCodeA = caseParam;
+    }
+})();
+
+// Real-Time System Clock
+function updateClock() {
+    const clockEl = document.getElementById('hud-clock');
+    if (!clockEl) return;
+    const now = new Date();
+    clockEl.textContent = now.toTimeString().split(' ')[0] + ' IST';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// CSRF Token Helper
+function getCSRFToken() {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === ('csrftoken=')) {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Audio Feedback Chime (Synthetic Web Audio API)
+function playClearanceChime(type) {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'go') {
+            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.12); // A5
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.45);
+        } else if (type === 'tick') {
+            osc.frequency.setValueAtTime(1046.5, audioCtx.currentTime); // C6
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.18);
+        }
+    } catch (e) {
+        // AudioContext disabled by browser policy until gesture
+    }
+}
+
+function showToast(msg) {
+    const toast = document.getElementById('readiness-toast');
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3500);
+}
+
+function setViewMode(mode) {
+    currentViewMode = mode;
+    document.getElementById('btn-single-view').classList.toggle('active', mode === 'single');
+    document.getElementById('btn-split-view').classList.toggle('active', mode === 'split');
+
+    const container = document.getElementById('readiness-main-container');
+    container.className = `readiness-container readiness-container--${mode}`;
+    renderMainView();
+}
+
+function selectCase(caseCode, targetSlot = 'A') {
+    if (targetSlot === 'A') {
+        activeCaseCodeA = caseCode;
+    } else {
+        activeCaseCodeB = caseCode;
+    }
+    renderTabs();
+    renderMainView();
+}
+
+function renderTabs() {
+    const bar = document.getElementById('case-selector-bar');
+    if (!bar) return;
+
+    bar.innerHTML = casesData.map(c => {
+        let beaconClass = 'beacon-hold';
+        if (c.readiness_decision === 'ready') beaconClass = 'beacon-go';
+        else if (c.readiness_decision === 'conditionally_ready') beaconClass = 'beacon-caution';
+
+        const isActive = (c.case_code === activeCaseCodeA);
+        const label = c.train_number ? c.train_number.split(' ')[0] + ' ' + (c.train_number.split(' ')[1] || '') : c.case_code;
+
+        return `
+            <button class="train-tab-btn ${isActive ? 'active' : ''}" onclick="selectCase('${c.case_code}', 'A')">
+                <span class="status-beacon ${beaconClass}"></span>
+                <span>${label}</span>
+                <span style="opacity: 0.6; font-size:0.75rem;">[${c.case_code}]</span>
+            </button>
+        `;
+    }).join('');
+}
+
+function renderCaseCard(c, slot = 'A') {
+    if (!c) return '<div class="departure-card">No departure gate selected.</div>';
+
+    let clearanceClass = 'clearance-nogo';
+    let clearanceText = 'HOLD AT PLATFORM (NO-GO) — 0 KM/H';
+    let iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
+
+    if (c.readiness_decision === 'ready') {
+        clearanceClass = 'clearance-go';
+        clearanceText = `CLEARED FOR DEPARTURE (GO) — ${c.cleared_speed_kmph || 130} KM/H`;
+        iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+    } else if (c.readiness_decision === 'conditionally_ready') {
+        clearanceClass = 'clearance-caution';
+        clearanceText = `CAUTION RESTRICTION — ${c.cleared_speed_kmph || 30} KM/H`;
+        iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+    }
+
+    const t = c.telemetry || {};
+
+    // Render 3-Pillar Pre-Flight Checklist
+    const checklistHtml = (c.checklist || []).map(item => {
+        let tickBadge = `<span class="tick-badge tick-badge--pending">⏳ PENDING</span>`;
+        let cardModClass = '';
+        if (item.status === 'passed') {
+            tickBadge = `<span class="tick-badge tick-badge--passed">✓ PASSED</span>`;
+            cardModClass = 'flightdeck-checklist-card--passed';
+        } else if (item.status === 'failed') {
+            tickBadge = `<span class="tick-badge tick-badge--failed">❌ FAILED</span>`;
+            cardModClass = 'flightdeck-checklist-card--failed';
+        }
+
+        // Distinct pillar icons
+        let pIcon = '🛡️';
+        if (item.category === 'signal') pIcon = '🚦';
+        else if (item.item_code.includes('SCHEDULE') || item.category === 'safety') pIcon = '⏱️';
+
+        return `
+            <div class="flightdeck-checklist-card ${cardModClass}">
+                <div class="checklist-main-info">
+                    <div class="checklist-pillar-title">
+                        <span class="pillar-icon">${pIcon}</span>
+                        <span>${item.title}</span>
+                    </div>
+                    <div class="worker-sync-tag">
+                        ${item.signed_off_by ? `⚡ <strong>${item.signed_off_by}</strong> at ${item.signed_off_at || 'Sync Recorded'}` : 'Awaiting worker field verification & signal sync'}
+                        ${item.sign_off_comments ? `— <em>"${item.sign_off_comments}"</em>` : ''}
+                    </div>
+                </div>
+                <div class="checklist-actions-wrap">
+                    ${tickBadge}
+                    <button class="btn-worker-sign" onclick="quickSignOff('${c.case_code}', ${item.id})">
+                        ⚡ Quick Verify
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Render Isolated Audit Records
+    const auditHtml = (c.audit_trail || []).map(a => `
+        <div class="audit-row">
+            <span>[${a.time_str}]</span> <strong>${a.actor_identifier}:</strong> ${a.notes}
+        </div>
+    `).join('') || '<div class="audit-row">No clearance events recorded yet.</div>';
+
+    return `
+        <div class="departure-card" id="card-${c.case_code}">
+            <div class="departure-header">
+                <div class="train-meta">
+                    <div class="badge-strip">
+                        <span class="case-id-badge">${c.case_code}</span>
+                        ${c.train_number ? `<span class="train-num-badge">${c.train_number}</span>` : ''}
+                        <span class="case-id-badge" style="background: rgba(255,255,255,0.05); color:#94a3b8; border-color: rgba(255,255,255,0.1);">ORIGIN: PLATFORM 1 (NDLS)</span>
+                    </div>
+                    <h2 class="train-title">${c.title}</h2>
+                    <div class="train-subtitle">Assigned Route: ${c.section_name} • Dispatch Unit: Northern Central Corridor</div>
+                </div>
+                <div class="master-clearance-light ${clearanceClass}">
+                    ${iconSvg}
+                    <span>${clearanceText}</span>
+                </div>
+            </div>
+
+            <!-- Automated IoT Route Health Telemetry HUD -->
+            <div>
+                <div class="checklist-section-title">
+                    <span>📡 Automated IoT Route Health Telemetry Radar</span>
+                    <span style="font-family:'JetBrains Mono'; font-size:0.85rem; color:var(--fd-cyan);">Composite Safety Score: ${t.composite_score || 98}%</span>
+                </div>
+                <div class="telemetry-radar-grid">
+                    <div class="telemetry-cell">
+                        <span class="telemetry-cell-label">Rail Temperature</span>
+                        <span class="telemetry-cell-val" style="color:${t.temperature_passed ? '#10b981' : '#ef4444'}">${t.temperature_celsius || 28.4}°C</span>
+                        <span class="telemetry-cell-status ${t.temperature_passed ? 'text-pass' : 'text-fail'}">
+                            ${t.temperature_passed ? '✓ 15°C - 45°C Nominal' : '⚠ Out of Envelope'}
+                        </span>
+                    </div>
+                    <div class="telemetry-cell">
+                        <span class="telemetry-cell-label">Track Vibration RMS</span>
+                        <span class="telemetry-cell-val" style="color:${t.vibration_passed ? '#10b981' : '#ef4444'}">${t.vibration_rms || 1.12} mm/s</span>
+                        <span class="telemetry-cell-status ${t.vibration_passed ? 'text-pass' : 'text-fail'}">
+                            ${t.vibration_passed ? '✓ Safe < 2.50 mm/s' : '⚠ High Spike Spike'}
+                        </span>
+                    </div>
+                    <div class="telemetry-cell">
+                        <span class="telemetry-cell-label">AI Defect Risk</span>
+                        <span class="telemetry-cell-val" style="color:${t.ai_risk_passed ? '#10b981' : '#ef4444'}">${t.ai_risk_score || 4.0}%</span>
+                        <span class="telemetry-cell-status ${t.ai_risk_passed ? 'text-pass' : 'text-fail'}">
+                            ${t.ai_risk_passed ? '✓ Nominal < 25%' : '⚠ Defect Alert'}
+                        </span>
+                    </div>
+                    <div class="telemetry-cell">
+                        <span class="telemetry-cell-label">Route Critical Alerts</span>
+                        <span class="telemetry-cell-val" style="color:${t.alerts_passed ? '#10b981' : '#ef4444'}">${t.active_critical_alerts !== undefined ? t.active_critical_alerts : 0}</span>
+                        <span class="telemetry-cell-status ${t.alerts_passed ? 'text-pass' : 'text-fail'}">
+                            ${t.alerts_passed ? '✓ Zero Critical Alerts' : '⚠ Blocked by Alerts'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3-Pillar Pre-Flight Departure Checklist -->
+            <div>
+                <div class="checklist-section-title">
+                    <span>📋 Flight-Deck 3-Pillar Departure Checklist</span>
+                    <span style="font-size:0.75rem; color:#94a3b8;">${t.passed_checklist_items || 0}/${t.total_checklist_items || 3} Verified • Field Synced</span>
+                </div>
+                <div class="checklist-list">
+                    ${checklistHtml}
+                </div>
+            </div>
+
+            <!-- Operations Controller Master Clearance Switchboard -->
+            <div class="controller-switchboard">
+                <div class="switchboard-title">
+                    <span>🚦 Operations Controller Clearance Gate</span>
+                    ${c.is_overridden ? '<span class="tick-badge tick-badge--failed">OVERRIDE ENFORCED</span>' : ''}
+                </div>
+                <div class="clearance-buttons-group">
+                    <button class="btn-master-action btn-master-go" onclick="submitDecision('${c.case_code}', 'ready', 130)">
+                        <span>🟢 CLEARED FOR DEPARTURE (GO)</span>
+                        <span style="font-size:0.72rem; opacity:0.85;">Authorize Green Signal (130 km/h)</span>
+                    </button>
+                    <button class="btn-master-action btn-master-caution" onclick="submitDecision('${c.case_code}', 'conditionally_ready', 30)">
+                        <span>🟡 CAUTION DEPARTURE</span>
+                        <span style="font-size:0.72rem; opacity:0.85;">Turnout Restriction (30 km/h)</span>
+                    </button>
+                    <button class="btn-master-action btn-master-hold" onclick="submitDecision('${c.case_code}', 'not_ready', 0)">
+                        <span>🔴 HOLD AT PLATFORM (NO-GO)</span>
+                        <span style="font-size:0.72rem; opacity:0.85;">Lock Red Signal (0 km/h)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Official Railway Digital Seal -->
+            ${c.readiness_decision !== 'pending' ? `
+                <div class="flightdeck-seal">
+                    <div class="seal-info">
+                        <div><strong>OFFICIAL RAILWAY FLIGHT-DECK DEPARTURE SEAL:</strong> ${c.readiness_decision.toUpperCase()}</div>
+                        <div>AUTHORIZATION ID: <code>${c.case_code}</code> • AUTH BY: <code>${c.decision_taken_by || 'Operations Controller'}</code></div>
+                        <div>TIMESTAMP: ${c.decision_taken_at || 'Recorded in Immutable Ledger'} • PERMITTED SPEED: ${c.cleared_speed_kmph} KM/H</div>
+                    </div>
+                    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                </div>
+            ` : ''}
+
+            <!-- Immutable Audit Trail -->
+            <div>
+                <div class="checklist-section-title" style="font-size:0.8rem; margin-bottom:0.35rem;">
+                    <span>📜 Isolated Flight-Deck Audit Trail (Cryptographic Record)</span>
+                </div>
+                <div class="flightdeck-audit-trail">
+                    ${auditHtml}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderMainView() {
+    const container = document.getElementById('readiness-main-container');
+    if (!container) return;
+
+    const caseA = casesData.find(c => c.case_code === activeCaseCodeA) || casesData[0];
+
+    if (currentViewMode === 'single') {
+        container.innerHTML = renderCaseCard(caseA, 'A');
+    } else {
+        const caseB = casesData.find(c => c.case_code === activeCaseCodeB && c.case_code !== caseA.case_code) || casesData[1] || caseA;
+        container.innerHTML = `
+            ${renderCaseCard(caseA, 'A')}
+            ${renderCaseCard(caseB, 'B')}
+        `;
+    }
+}
+
+// Quick Sign-off action handler
+async function quickSignOff(caseCode, itemId) {
+    try {
+        const resp = await fetch(`/readiness/api/cases/${caseCode}/sign-off/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken(),
+            },
+            body: JSON.stringify({
+                item_id: itemId,
+                status: 'passed',
+                role_designation: 'Field Safety Guard / Station Master',
+                notes: 'Physical check verified on site. Interlocking telemetry synced.'
+            })
+        });
+
+        const data = await resp.json();
+        if (data.status === 'success') {
+            playClearanceChime('tick');
+            updateLocalCase(data.case);
+            showToast(`✓ Gate ${caseCode}: Checklist item verified & signed off!`);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Network error during field sign-off');
+    }
+}
+
+// Master Controller Decision Gate
+async function submitDecision(caseCode, decision, speedKmph) {
+    try {
+        const resp = await fetch(`/readiness/api/cases/${caseCode}/decide/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken(),
+            },
+            body: JSON.stringify({
+                decision: decision,
+                speed_kmph: speedKmph,
+                notes: `Flight-deck clearance ${decision.toUpperCase()} authorized via Operations Control Center.`,
+                is_override: false
+            })
+        });
+
+        const data = await resp.json();
+        if (data.status === 'success') {
+            if (decision === 'ready') playClearanceChime('go');
+            updateLocalCase(data.case);
+            showToast(`✓ Gate ${caseCode}: Decision ${decision.toUpperCase()} authorized!`);
+        } else if (data.requires_override) {
+            if (confirm(`Safety interlock check failed:\n${data.message}\n\nDo you want to log a mandatory Controller Override?`)) {
+                submitOverride(caseCode, decision, speedKmph);
+            }
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Network error during decision submission');
+    }
+}
+
+async function submitOverride(caseCode, decision, speedKmph) {
+    const reason = prompt('Enter mandatory justification for Controller Safety Override:');
+    if (!reason) return;
+
+    try {
+        const resp = await fetch(`/readiness/api/cases/${caseCode}/decide/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken(),
+            },
+            body: JSON.stringify({
+                decision: decision,
+                speed_kmph: speedKmph,
+                notes: `CONTROLLER OVERRIDE: ${reason}`,
+                is_override: true,
+                override_reason: reason
+            })
+        });
+
+        const data = await resp.json();
+        if (data.status === 'success') {
+            if (decision === 'ready') playClearanceChime('go');
+            updateLocalCase(data.case);
+            showToast(`✓ Gate ${caseCode}: Override recorded!`);
+        } else {
+            alert('Override Error: ' + data.message);
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// Modal Helpers
+function openWorkerModal() {
+    const backdrop = document.getElementById('worker-modal-backdrop');
+    if (!backdrop) return;
+
+    const caseSelect = document.getElementById('modal-select-case');
+    caseSelect.innerHTML = casesData.map(c => `
+        <option value="${c.case_code}" ${c.case_code === activeCaseCodeA ? 'selected' : ''}>
+            ${c.case_code} — ${c.train_number || c.title}
+        </option>
+    `).join('');
+
+    populateModalChecklistOptions();
+    backdrop.style.display = 'flex';
+}
+
+function closeWorkerModal() {
+    const backdrop = document.getElementById('worker-modal-backdrop');
+    if (backdrop) backdrop.style.display = 'none';
+}
+
+function populateModalChecklistOptions() {
+    const caseCode = document.getElementById('modal-select-case').value;
+    const targetCase = casesData.find(c => c.case_code === caseCode);
+    const itemSelect = document.getElementById('modal-select-item');
+    if (!targetCase || !itemSelect) return;
+
+    itemSelect.innerHTML = (targetCase.checklist || []).map(item => `
+        <option value="${item.id}">
+            [${item.item_code}] ${item.title} (Current: ${item.status.toUpperCase()})
+        </option>
+    `).join('');
+}
+
+async function submitModalSignOff() {
+    const caseCode = document.getElementById('modal-select-case').value;
+    const itemId = document.getElementById('modal-select-item').value;
+    const role = document.getElementById('modal-worker-role').value;
+    const status = document.getElementById('modal-worker-status').value;
+    const notes = document.getElementById('modal-worker-notes').value;
+
+    const btn = document.getElementById('btn-modal-transmit');
+    btn.disabled = true;
+    btn.textContent = 'Transmitting Field Signal...';
+
+    try {
+        const resp = await fetch(`/readiness/api/cases/${caseCode}/sign-off/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken(),
+            },
+            body: JSON.stringify({
+                item_id: itemId,
+                status: status,
+                role_designation: role,
+                notes: notes || 'Field inspection confirmed on site.'
+            })
+        });
+
+        const data = await resp.json();
+        if (data.status === 'success') {
+            playClearanceChime('tick');
+            updateLocalCase(data.case);
+            closeWorkerModal();
+            showToast(`✓ Field verification transmitted for ${caseCode}!`);
+        } else {
+            alert('Sign-off error: ' + data.message);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Network error during signal transmission');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> ⚡ TRANSMIT SIGNAL & VERIFY CHECK`;
+    }
+}
+
+function updateLocalCase(updatedCase) {
+    const idx = casesData.findIndex(c => c.case_code === updatedCase.case_code);
+    if (idx !== -1) {
+        casesData[idx] = updatedCase;
+    }
+
+    // Update KPI Summary
+    const total = casesData.length;
+    const ready = casesData.filter(c => c.readiness_decision === 'ready').length;
+    const hold = casesData.filter(c => c.readiness_decision === 'not_ready' || c.readiness_decision === 'pending').length;
+
+    const totalEl = document.getElementById('kpi-total');
+    const readyEl = document.getElementById('kpi-ready');
+    const holdEl = document.getElementById('kpi-hold');
+
+    if (totalEl) totalEl.textContent = total;
+    if (readyEl) readyEl.textContent = ready;
+    if (holdEl) holdEl.textContent = hold;
+
+    renderTabs();
+    renderMainView();
+}
+
+// Background Auto-Polling (3 seconds) for live cross-tab / cross-device sync
+setInterval(async function pollCases() {
+    try {
+        const resp = await fetch('/readiness/api/cases/');
+        const data = await resp.json();
+        if (data.status === 'success' && Array.isArray(data.cases)) {
+            // Check if any case changed
+            let changed = false;
+            data.cases.forEach(newC => {
+                const existing = casesData.find(c => c.case_code === newC.case_code);
+                if (!existing || JSON.stringify(existing) !== JSON.stringify(newC)) {
+                    changed = true;
+                }
+            });
+            if (changed) {
+                casesData = data.cases;
+                renderTabs();
+                renderMainView();
+            }
+        }
+    } catch (e) {
+        // Silent background polling error suppression
+    }
+}, 3000);
+
+// Initial Render
+renderTabs();
+renderMainView();
+</script>
+{% endblock %}

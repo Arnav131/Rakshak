@@ -1,116 +1,92 @@
-<!-- frontend/templates/alerts.html -->
-<!--
-  Alerts page — displays all infrastructure alerts with severity filtering.
-  Each alert shows severity badge, description, location, and timestamp.
--->
 {% extends "base.html" %}
 {% load static %}
 
 {% block content %}
-<div class="alerts-page">
+<div class="ops-page alerts-page">
+    <div class="header-row ops-page-header">
+        <div class="greeting">
+            <h1>Alerts <span class="user-name">Center</span></h1>
+            <p>{{ summary.active }} active - {{ summary.critical }} critical - updated just now</p>
+        </div>
+        <div class="header-actions">
+            <div class="tab-group ops-tabs">
+                <a class="tab {% if current_status == 'active' %}tab--active{% endif %}" href="?status=active&severity={{ current_filter }}">Live</a>
+                <a class="tab {% if current_status == 'acknowledged' %}tab--active{% endif %}" href="?status=acknowledged&severity={{ current_filter }}">Acknowledged</a>
+                <a class="tab {% if current_status == 'resolved' %}tab--active{% endif %}" href="?status=resolved&severity={{ current_filter }}">Resolved</a>
+            </div>
+        </div>
+    </div>
 
-    <!-- ================================================================ -->
-    <!-- ALERT SUMMARY BAR                                                -->
-    <!-- ================================================================ -->
-    <section class="alert-summary" id="alert-summary">
-        <div class="summary-cards">
-            <div class="summary-card summary-card--total">
-                <div class="summary-value">{{ summary.total }}</div>
-                <div class="summary-label">Total Alerts</div>
-            </div>
-            <div class="summary-card summary-card--critical">
-                <div class="summary-value">{{ summary.critical }}</div>
-                <div class="summary-label">Critical</div>
-            </div>
-            <div class="summary-card summary-card--warning">
-                <div class="summary-value">{{ summary.warning }}</div>
-                <div class="summary-label">Warning</div>
-            </div>
-            <div class="summary-card summary-card--info">
-                <div class="summary-value">{{ summary.info }}</div>
-                <div class="summary-label">Info</div>
-            </div>
-            <div class="summary-card summary-card--active">
-                <div class="summary-value">{{ summary.active }}</div>
-                <div class="summary-label">Active</div>
-            </div>
+    <section class="ops-summary-grid" aria-label="Alert summary">
+        <div class="card kpi ops-summary-card">
+            <div class="kpi-head"><span class="kpi-label">Total</span><span class="kpi-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg></span></div>
+            <div class="kpi-value"><b class="num">{{ summary.total }}</b><span class="kpi-unit">alerts</span></div>
+            <div class="kpi-delta"><span class="lbl">all records</span></div>
+        </div>
+        <div class="card kpi ops-summary-card ops-summary-card--critical">
+            <div class="kpi-head"><span class="kpi-label">Critical</span><span class="kpi-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></span></div>
+            <div class="kpi-value"><b class="num">{{ summary.critical }}</b><span class="kpi-unit">open risk</span></div>
+            <div class="kpi-delta"><span class="val neg">highest priority</span></div>
+        </div>
+        <div class="card kpi ops-summary-card ops-summary-card--warning">
+            <div class="kpi-head"><span class="kpi-label">Warning</span><span class="kpi-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg></span></div>
+            <div class="kpi-value"><b class="num">{{ summary.warning }}</b><span class="kpi-unit">open</span></div>
+            <div class="kpi-delta"><span class="val warn">watch list</span></div>
+        </div>
+        <div class="card kpi ops-summary-card ops-summary-card--info">
+            <div class="kpi-head"><span class="kpi-label">Info</span><span class="kpi-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg></span></div>
+            <div class="kpi-value"><b class="num">{{ summary.info }}</b><span class="kpi-unit">notices</span></div>
+            <div class="kpi-delta"><span class="val pos">informational</span></div>
+        </div>
+        <div class="card kpi ops-summary-card">
+            <div class="kpi-head"><span class="kpi-label">Resolved</span><span class="kpi-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span></div>
+            <div class="kpi-value"><b class="num">{{ summary.resolved }}</b><span class="kpi-unit">closed</span></div>
+            <div class="kpi-delta"><span class="lbl">{{ summary.acknowledged }} acknowledged</span></div>
         </div>
     </section>
 
-    <!-- ================================================================ -->
-    <!-- FILTER CONTROLS                                                  -->
-    <!-- ================================================================ -->
-    <section class="filter-bar" id="alert-filters">
-        <div class="filter-group">
-            <span class="filter-label">Filter by Severity:</span>
-            <a href="?severity=all"
-               class="filter-btn {% if current_filter == 'all' %}filter-btn--active{% endif %}"
-               id="filter-all">All</a>
-            <a href="?severity=critical"
-               class="filter-btn filter-btn--critical {% if current_filter == 'critical' %}filter-btn--active{% endif %}"
-               id="filter-critical">🔴 Critical</a>
-            <a href="?severity=warning"
-               class="filter-btn filter-btn--warning {% if current_filter == 'warning' %}filter-btn--active{% endif %}"
-               id="filter-warning">🟡 Warning</a>
-            <a href="?severity=info"
-               class="filter-btn filter-btn--info {% if current_filter == 'info' %}filter-btn--active{% endif %}"
-               id="filter-info">🔵 Info</a>
+    <section class="ops-filter-bar" aria-label="Alert filters">
+        <div class="ops-filter-group">
+            <span class="sub-label">Filter</span>
+            <a href="?status={{ current_status }}&severity=all" class="filter-chip {% if current_filter == 'all' %}filter-chip--active{% endif %}">All <b>{{ summary.total }}</b></a>
+            <a href="?status={{ current_status }}&severity=critical" class="filter-chip filter-chip--critical {% if current_filter == 'critical' %}filter-chip--active{% endif %}"><span class="dot crit"></span>Critical <b>{{ summary.critical }}</b></a>
+            <a href="?status={{ current_status }}&severity=warning" class="filter-chip filter-chip--warning {% if current_filter == 'warning' %}filter-chip--active{% endif %}"><span class="dot warn"></span>Warning <b>{{ summary.warning }}</b></a>
+            <a href="?status={{ current_status }}&severity=info" class="filter-chip filter-chip--info {% if current_filter == 'info' %}filter-chip--active{% endif %}"><span class="dot good"></span>Info <b>{{ summary.info }}</b></a>
         </div>
+        <div class="ops-result-count">Showing <b>{{ alerts|length }}</b> alerts</div>
     </section>
 
-    <!-- ================================================================ -->
-    <!-- ALERT LIST                                                       -->
-    <!-- ================================================================ -->
-    <section class="alert-list" id="alert-list">
+    <section class="ops-list" id="alert-list" aria-label="Alerts">
         {% for alert in alerts %}
-        <div class="alert-card alert-card--{{ alert.severity }}" id="alert-{{ alert.id }}" onclick="window.location.href='/map/?focus_alert={{ alert.id }}'" style="cursor: pointer;">
-            <div class="alert-severity-strip"></div>
-            <div class="alert-body">
-                <div class="alert-header">
-                    <div class="alert-title-row">
-                        <span class="severity-badge severity-badge--{{ alert.severity }}">
-                            {% if alert.severity == 'critical' %}🔴 CRITICAL
-                            {% elif alert.severity == 'warning' %}🟡 WARNING
-                            {% else %}🔵 INFO{% endif %}
-                        </span>
-                        <h3 class="alert-title">{{ alert.title }}</h3>
-                    </div>
-                    <div class="alert-meta">
-                        <span class="alert-id">{{ alert.id }}</span>
-                        <span class="alert-status alert-status--{{ alert.status }}">
-                            {{ alert.status|upper }}
-                        </span>
-                    </div>
-                </div>
-                <p class="alert-description">{{ alert.description }}</p>
-                <div class="alert-details">
-                    <div class="alert-detail">
-                        <span class="detail-icon">🛤️</span>
-                        <span class="detail-label">Track:</span>
-                        <span class="detail-value">{{ alert.track_id }}</span>
-                    </div>
-                    <div class="alert-detail">
-                        <span class="detail-icon">📍</span>
-                        <span class="detail-label">Station:</span>
-                        <span class="detail-value">{{ alert.station }}</span>
-                    </div>
-                    <div class="alert-detail">
-                        <span class="detail-icon">🏢</span>
-                        <span class="detail-label">Zone:</span>
-                        <span class="detail-value">{{ alert.zone }}</span>
-                    </div>
-                    <div class="alert-detail">
-                        <span class="detail-icon">🕐</span>
-                        <span class="detail-label">Time:</span>
-                        <span class="detail-value">{{ alert.timestamp }}</span>
-                    </div>
-                </div>
+        <article class="ops-list-card alert-row alert-row--{{ alert.severity }}" id="alert-{{ alert.id }}">
+            <div class="ops-row-icon">
+                {% if alert.severity == 'critical' %}
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+                {% elif alert.severity == 'warning' %}
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m7 14 4-4 4 4 5-6"></path></svg>
+                {% else %}
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                {% endif %}
             </div>
-        </div>
+            <div class="ops-row-body">
+                <div class="ops-row-meta">
+                    <span class="alert-tag {{ alert.severity }}">{{ alert.severity }}</span>
+                    <span class="ops-code mono">{{ alert.id }}</span>
+                    <span class="ops-code mono">{{ alert.track_id }}</span>
+                    <span class="status-badge status-badge--{{ alert.status }}">{{ alert.status }}</span>
+                </div>
+                <h2 class="ops-row-title">{{ alert.title }}</h2>
+                <p class="ops-row-copy">{{ alert.station }} - {{ alert.zone }} - {{ alert.sensor }} - {{ alert.description }}</p>
+            </div>
+            <div class="ops-row-actions">
+                <span class="ops-row-time mono">{{ alert.time_ago }}</span>
+                <a class="btn-pill ghost" href="{% url 'map_view:map' %}?focus_alert={{ alert.id }}">View on map</a>
+            </div>
+        </article>
         {% empty %}
-        <div class="empty-state">
-            <div class="empty-icon">✅</div>
-            <p>No alerts matching the current filter.</p>
+        <div class="card empty-state">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--emerald-soft)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+            <p>No alerts match the current filters.</p>
         </div>
         {% endfor %}
     </section>

@@ -66,13 +66,9 @@ else:
     os.makedirs(_local_mlruns, exist_ok=True)
     _TRACKING_URI = f'file:///{_local_mlruns.replace(os.sep, "/")}'
 
-try:
-    mlflow.set_tracking_uri("sqlite:///mlflow.db")
-    _FINAL_URI = "sqlite:///mlflow.db"
-except Exception:
-    os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
-    mlflow.set_tracking_uri(_TRACKING_URI)
-    _FINAL_URI = _TRACKING_URI
+os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
+mlflow.set_tracking_uri(_TRACKING_URI)
+_FINAL_URI = _TRACKING_URI
 
 mlflow.set_experiment('RAKSHAK-v1')
 

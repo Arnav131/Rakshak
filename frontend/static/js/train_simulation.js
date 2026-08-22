@@ -34,7 +34,7 @@ function initTrainSimulation(map) {
      */
     function updateTrains() {
         fetch('/api/trains/')
-            .then(function(response) { return response.json(); })
+            .then(function(response) { if (!response.ok) throw new Error(`HTTP ${response.status}`); return response.json(); })
             .then(function(trains) {
                 // Track which trains are still present
                 var activeIds = {};

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "ZONE-01",
+    "code": "NR",
+    "name": "Northern Railway Zone",
+    "short_name": "ZONE 01",
+    "status": "OPERATIONAL",
+    "center": [
+      28.6139,
+      77.209
+    ],
+    "zoom": 7
+  },
+  {
+    "id": "ZONE-02",
+    "code": "WR",
+    "name": "Western Railway Zone",
+    "short_name": "ZONE 02",
+    "status": "WARNING",
+    "center": [
+      21.1702,
+      72.8311
+    ],
+    "zoom": 7
+  },
+  {
+    "id": "ZONE-03",
+    "code": "CR",
+    "name": "Central Railway Zone",
+    "short_name": "ZONE 03",
+    "status": "OPERATIONAL",
+    "center": [
+      19.076,
+      72.8777
+    ],
+    "zoom": 7
+  },
+  {
+    "id": "ZONE-04",
+    "code": "SR",
+    "name": "Southern Railway Zone",
+    "short_name": "ZONE 04",
+    "status": "CRITICAL",
+    "center": [
+      13.0827,
+      80.2707
+    ],
+    "zoom": 8
+  },
+  {
+    "id": "ZONE-05",
+    "code": "ER",
+    "name": "Eastern Railway Zone",
+    "short_name": "ZONE 05",
+    "status": "OPERATIONAL",
+    "center": [
+      22.5726,
+      88.3639
+    ],
+    "zoom": 7
+  },
+  {
+    "id": "ZONE-06",
+    "code": "SCR",
+    "name": "South Central Railway Zone",
+    "short_name": "ZONE 06",
+    "status": "OPERATIONAL",
+    "center": [
+      17.385,
+      78.4867
+    ],
+    "zoom": 7
+  }
+]

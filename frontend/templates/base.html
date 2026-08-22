@@ -1,126 +1,106 @@
-<!-- frontend/templates/base.html -->
-<!--
-  Base template for Rakshak — Railway Operations Control Center.
-  All pages extend this template to inherit the nav, header, and footer.
-  CDN links: Chart.js (dashboard charts), Leaflet.js (map), Google Fonts (Inter).
--->
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Rakshak — AI-Powered Predictive Rail Maintenance System. Real-time railway infrastructure monitoring and predictive failure analysis.">
-    <title>{{ project_name }} — {{ page_title|default:"Control Center" }}</title>
+    <meta name="description" content="Rakshak — AI-Powered Predictive Rail Maintenance System.">
+    <title>RAKSHAK — {{ page_title|default:"Control Center" }}</title>
 
-    <!-- Google Fonts — Inter for UI, JetBrains Mono for data readouts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 
-    <!-- Leaflet.js CSS (loaded on all pages for consistency, lightweight) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin="">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 
-    <!-- Rakshak stylesheet -->
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=4">
-
-    <!-- Prevent flash of wrong theme — runs before any paint -->
-    <script>
-        (function() {
-            var t = localStorage.getItem('rakshak-theme');
-            if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', t);
-        })();
-    </script>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=14">
 
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <!-- ================================================================== -->
-    <!-- TOP HEADER BAR — Control Center branding + live clock              -->
-    <!-- ================================================================== -->
-    <header class="control-header" id="control-header">
-        <div class="header-left">
-            <div class="header-brand">
-                <span class="brand-icon">🛡️</span>
-                <div class="brand-text">
-                    <h1 class="brand-name">{{ project_name }}</h1>
-                    <span class="brand-subtitle">{{ project_subtitle }}</span>
+    <div class="app-layout">
+
+        <aside class="app-sidebar" id="app-sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand" title="{{ project_name|default:'Rakshak' }}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 6v6c0 5.5 3.8 9.5 9 11 5.2-1.5 9-5.5 9-11V6l-9-4z"></path></svg>
+                </div>
+                <div style="line-height:1.15;">
+                    <div class="sidebar-brand-text">{{ project_name|default:"Rakshak" }}</div>
+                    <div class="sidebar-brand-sub">Rail Ops</div>
                 </div>
             </div>
-        </div>
+            
+            <nav class="sidebar-nav" id="main-nav">
+                {% for item in nav_items %}
+                <a href="{{ item.url }}"
+                   class="sidebar-nav-item {% if item.active %}sidebar-nav-item--active{% endif %}"
+                   id="nav-{{ item.icon }}"
+                   title="{{ item.name }}"
+                   aria-label="{{ item.name }}">
+                    <span class="nav-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            {% if item.icon == 'dashboard' %}
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            {% elif item.icon == 'alerts' %}
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            {% elif item.icon == 'tickets' %}
+                            <path d="M20 7H4a2 2 0 0 0-2 2v2a2 2 0 0 1 0 4v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a2 2 0 0 1 0-4V9a2 2 0 0 0-2-2z"></path>
+                            {% elif item.icon == 'map' %}
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>
+                            {% elif item.icon == 'readiness' %}
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline>
+                            {% elif item.icon == 'patrol' %}
+                            <path d="M16 3h5v5M8 3H3v5M3 16v5h5M16 21h5v-5"></path><circle cx="12" cy="12" r="4"></circle>
+                            {% elif item.icon == 'simulation' %}
+                            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line>
+                            {% elif item.icon == 'admin' %}
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>
+                            {% else %}
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            {% endif %}
+                        </svg>
+                    </span>
+                    <span class="nav-item-label">{{ item.name }}</span>
+                </a>
+                {% endfor %}
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="sidebar-status">
+                    <div class="sidebar-status-label">SYSTEM</div>
+                    <div class="sidebar-status-row"><span class="dot-live"></span>All systems nominal</div>
+                    <div class="sidebar-status-sub">Last sync just now</div>
+                </div>
 
-        <div class="header-right">
-            <div class="live-clock" id="live-clock">
-                <div class="clock-label">IST</div>
-                <div class="clock-time" id="clock-time">--:--:--</div>
-                <div class="clock-date" id="clock-date">----/--/--</div>
+                {% if request.user.is_authenticated %}
+                <div class="sidebar-user">
+                    <div class="avatar">{{ request.user.username|first|upper }}</div>
+                    <div style="line-height:1.2;flex:1;min-width:0;">
+                        <div style="font-size:12.5px;font-weight:600;">{{ request.user.username }}</div>
+                        <div style="font-size:10.5px;color:var(--text-tertiary);">{% if is_controller %}Controller{% elif is_patrol_worker %}Patrol Worker{% else %}Read-Only{% endif %}</div>
+                    </div>
+                    <form method="post" action="{% url 'logout' %}" style="display:inline;margin:0;padding:0;">
+                        {% csrf_token %}
+                        <button type="submit" class="sidebar-nav-item" style="padding:6px;border-radius:8px;background:none;border:none;cursor:pointer;color:inherit;display:inline-flex;align-items:center;justify-content:center;" title="Logout" aria-label="Logout">
+                            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span>
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
             </div>
-            <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark/light mode" title="Toggle theme">
-                <span class="icon-moon">🌙</span>
-                <span class="icon-sun">☀️</span>
-            </button>
+        </aside>
+
+        <div class="app-content-wrapper">
+            <main class="control-main">
+                {% block content %}{% endblock %}
+            </main>
         </div>
-    </header>
+    </div>
 
-    <!-- ================================================================== -->
-    <!-- NAVIGATION BAR                                                     -->
-    <!-- ================================================================== -->
-    <nav class="control-nav" id="main-nav">
-        <div class="nav-inner">
-            {% for item in nav_items %}
-            <a href="{{ item.url }}"
-               class="nav-item {% if item.active %}nav-item--active{% endif %}"
-               id="nav-{{ item.icon }}">
-                <span class="nav-icon">
-                    {% if item.icon == 'dashboard' %}📊
-                    {% elif item.icon == 'alerts' %}🔔
-                    {% elif item.icon == 'tickets' %}🎫
-                    {% elif item.icon == 'map' %}🗺️
-                    {% endif %}
-                </span>
-                <span class="nav-label">{{ item.name }}</span>
-                <span class="nav-desc">{{ item.description }}</span>
-            </a>
-            {% endfor %}
-        </div>
-        <!-- Mobile hamburger toggle -->
-        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
-            <span></span><span></span><span></span>
-        </button>
-    </nav>
-
-    <!-- ================================================================== -->
-    <!-- MAIN CONTENT AREA                                                  -->
-    <!-- ================================================================== -->
-    <main class="control-main" id="main-content">
-        {% block content %}{% endblock %}
-    </main>
-
-    <!-- ================================================================== -->
-    <!-- FOOTER                                                             -->
-    <!-- ================================================================== -->
-    <footer class="control-footer">
-        <span>RAKSHAK v1.0 — Predictive Rail Maintenance</span>
-        <span>FAR AWAY 2026</span>
-    </footer>
-
-    <!-- ================================================================== -->
-    <!-- SCRIPTS                                                            -->
-    <!-- ================================================================== -->
-    <!-- Chart.js (loaded on all pages; only initialized where needed) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-
-    <!-- Leaflet.js -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
-
-    <!-- Rakshak core JS (live clock, nav toggle, shared utilities) -->
-    <script src="{% static 'js/dashboard.js' %}?v=4"></script>
-
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="{% static 'js/dashboard.js' %}?v=14"></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

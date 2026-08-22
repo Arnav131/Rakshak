@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/simulation.css' %}?v=1">
+{% endblock %}
+
+{% block content %}
+<div class="sim-page">
+
+    <div class="sim-header">
+        <h2>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"></path><path d="M8.5 2h7"></path></svg>
+            Live Simulation
+        </h2>
+        <p class="sim-subtitle">
+            Generate a fresh, never-seen sensor journey and watch the real
+            Rakshak AI pipeline predict on it live — no preloaded data.
+        </p>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- SETUP FORM — source / destination + start button             -->
+    <!-- ============================================================= -->
+    <div class="sim-setup" id="sim-setup">
+        {% csrf_token %}
+        <div class="sim-field">
+            <label for="sim-source">Source Station</label>
+            <input type="text" id="sim-source" placeholder="e.g. New Delhi" autocomplete="off" list="sim-station-list">
+        </div>
+        <div class="sim-field">
+            <label for="sim-destination">Destination Station</label>
+            <input type="text" id="sim-destination" placeholder="e.g. Mumbai Central" autocomplete="off" list="sim-station-list">
+        </div>
+        <div class="sim-field">
+            <label for="sim-condition">Track Condition</label>
+            <select id="sim-condition" class="sim-select" style="background: var(--bg-surface-2, #1e293b); color: var(--text-primary, #f8fafc); border: 1px solid var(--border-color, #334155); border-radius: 8px; padding: 10px 14px; font-size: 14px; outline: none; width: 100%;">
+                <option value="auto">Auto (Smart AI Detection)</option>
+                <option value="nominal">Optimal Track Health (Nominal)</option>
+                <option value="thermal_buckle">High Thermal Buckling Risk (Hot Section)</option>
+                <option value="gauge_widening">Ballast Settle & Gauge Widening</option>
+                <option value="high_vibration">Rail Joint Wear & High Vibration</option>
+            </select>
+        </div>
+        <button class="sim-start-btn" id="sim-start-btn">🚆 Let Our Journey Begin</button>
+        <div class="sim-error" id="sim-error"></div>
+    </div>
+
+    <datalist id="sim-station-list"></datalist>
+
+    <!-- ============================================================= -->
+    <!-- ROUTE MAP — real track path between selected stations         -->
+    <!-- ============================================================= -->
+    <div class="sim-route-panel" id="sim-route-panel">
+        <div class="sim-route-header">
+            <span class="sim-route-title">Route Preview</span>
+            <span class="sim-route-meta" id="sim-route-meta"></span>
+        </div>
+        <div class="sim-route-map" id="sim-route-map"></div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- TERMINAL / PIXEL-ART SCREEN — shown while journey runs        -->
+    <!-- ============================================================= -->
+    <div class="sim-terminal" id="sim-terminal" style="display:none;">
+        <div class="sim-terminal-titlebar">
+            <span class="sim-dot sim-dot--red"></span>
+            <span class="sim-dot sim-dot--yellow"></span>
+            <span class="sim-dot sim-dot--green"></span>
+            <span class="sim-terminal-title">rakshak_live_sim.exe</span>
+        </div>
+
+        <div class="sim-track-wrap">
+            <div class="sim-station sim-station--source" id="sim-station-source">SRC</div>
+            <div class="sim-track">
+                <div class="sim-rail"></div>
+                <div class="sim-train" id="sim-train">
+                    <pre class="sim-train-art">    ┌──────────┐
+ ▄▄▄│  🚂 RAIL │▄▄▄
+(●)(●)└──────────┘(●)(●)</pre>
+                </div>
+            </div>
+            <div class="sim-station sim-station--dest" id="sim-station-dest">DST</div>
+        </div>
+
+        <div class="sim-log" id="sim-log"></div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- RESULTS — shown once prediction comes back                    -->
+    <!-- ============================================================= -->
+    <div class="sim-results" id="sim-results" style="display:none;">
+        <div class="sim-arrival-banner" id="sim-arrival-banner"></div>
+
+        <div class="sim-result-grid">
+            <div class="sim-card sim-card--alert" id="sim-alert-card">
+                <div class="sim-card-label">Alert Level</div>
+                <div class="sim-card-value" id="sim-alert-level">—</div>
+                <div class="sim-card-sub" id="sim-alert-score">score: —</div>
+            </div>
+            <div class="sim-card">
+                <div class="sim-card-label">Fault Type</div>
+                <div class="sim-card-value" id="sim-fault-type">—</div>
+                <div class="sim-card-sub" id="sim-fault-conf">confidence: —</div>
+            </div>
+            <div class="sim-card">
+                <div class="sim-card-label">Scenario Generated</div>
+                <div class="sim-card-value" id="sim-flavour">—</div>
+                <div class="sim-card-sub" id="sim-backend-used">source: —</div>
+            </div>
+        </div>
+
+        <div class="sim-score-bar-wrap">
+            <div class="sim-score-bar-label">Anomaly Score</div>
+            <div class="sim-score-bar-track">
+                <div class="sim-score-bar-fill" id="sim-score-bar-fill"></div>
+            </div>
+        </div>
+
+        <canvas id="sim-chart" height="90"></canvas>
+
+        <div class="sim-suggestions" id="sim-suggestions"></div>
+
+        <div class="sim-actions-group">
+            <a href="/readiness/" class="sim-proceed-btn" id="sim-readiness-btn">
+                🚀 Proceed to Train Departure Readiness Clearance &rarr;
+            </a>
+            <button class="sim-reset-btn" id="sim-reset-btn">Run Another Journey</button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{% static 'js/simulation.js' %}?v=2"></script>
+{% endblock %}

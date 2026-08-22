@@ -1,0 +1,508 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAKSHAK — Login</title>
+    <style>
+        /* ============================================================
+           RAKSHAK LOGIN PAGE — SELF-CONTAINED STYLES
+           No dependency on dashboard.css for layout.
+           ============================================================ */
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: #0B0F14;
+            color: #F5F7FA;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ---- MAIN SPLIT LAYOUT ---- */
+        .login-page {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ---- LEFT: IMAGE PANEL ---- */
+        .login-image-panel {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .login-image-panel img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .login-image-panel .overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(11, 15, 20, 0.65) 0%,
+                rgba(11, 15, 20, 0.25) 100%
+            );
+            pointer-events: none;
+        }
+
+        /* ---- RIGHT: LOGIN PANEL ---- */
+        .login-panel {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            background: #0B0F14;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .login-content {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .login-form-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        /* ---- BRANDING ---- */
+        .login-brand {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .login-brand-logo {
+            display: inline-block;
+            width: 64px;
+            height: 64px;
+            max-width: 64px;
+            max-height: 64px;
+            color: #2F80ED;
+            margin-bottom: 1rem;
+        }
+
+        .login-brand h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #F5F7FA;
+            letter-spacing: 0.05em;
+            margin: 0 0 0.25rem 0;
+        }
+
+        .login-brand-subtitle {
+            font-size: 0.875rem;
+            color: #9AA3AF;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        /* ---- FORM ---- */
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #F5F7FA;
+        }
+
+        .input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrap .icon-left {
+            position: absolute;
+            left: 14px;
+            width: 18px;
+            height: 18px;
+            max-width: 18px;
+            max-height: 18px;
+            color: #707986;
+            pointer-events: none;
+            flex-shrink: 0;
+        }
+
+        .input-wrap input[type="text"],
+        .input-wrap input[type="password"] {
+            width: 100%;
+            padding: 12px 14px 12px 44px;
+            background: #0F1319;
+            border: 1px solid #27303A;
+            border-radius: 8px;
+            color: #F5F7FA;
+            font-size: 0.9375rem;
+            font-family: inherit;
+            transition: border-color 200ms ease, box-shadow 200ms ease;
+        }
+
+        .input-wrap input::placeholder {
+            color: #707986;
+        }
+
+        .input-wrap input:focus {
+            outline: none;
+            border-color: #2F80ED;
+            box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.15);
+        }
+
+        /* Password toggle */
+        .toggle-password {
+            position: absolute;
+            right: 14px;
+            background: none;
+            border: none;
+            color: #707986;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            transition: color 200ms ease;
+        }
+
+        .toggle-password:hover {
+            color: #F5F7FA;
+        }
+
+        .toggle-password svg {
+            width: 18px;
+            height: 18px;
+            max-width: 18px;
+            max-height: 18px;
+            flex-shrink: 0;
+        }
+
+        /* ---- OPTIONS ROW ---- */
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+        }
+
+        .remember-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #9AA3AF;
+            cursor: pointer;
+        }
+
+        .remember-label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #2F80ED;
+            cursor: pointer;
+        }
+
+        .forgot-link {
+            color: #347FE5;
+            text-decoration: none;
+            transition: color 200ms ease;
+        }
+
+        .forgot-link:hover {
+            color: #2F80ED;
+            text-decoration: underline;
+        }
+
+        /* ---- SIGN IN BUTTON ---- */
+        .btn-login {
+            margin-top: 0.5rem;
+            width: 100%;
+            padding: 14px;
+            background: #2F80ED;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-login:hover {
+            background: #347FE5;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(47, 128, 237, 0.25);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+            background: #1D4ED8;
+            box-shadow: none;
+        }
+
+        .btn-login:focus-visible {
+            outline: 2px solid #2F80ED;
+            outline-offset: 2px;
+        }
+
+        .btn-login.is-loading {
+            opacity: 0.8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-login .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        .btn-login.is-loading .spinner {
+            display: block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ---- ERROR ---- */
+        .form-error {
+            background: rgba(220, 38, 38, 0.1);
+            color: #F87171;
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+
+        /* ---- FOOTER ---- */
+        .login-status {
+            width: 100%;
+            border-top: 1px solid #27303A;
+            padding: 18px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #F5F7FA;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #27B866;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(39, 184, 102, 0.4);
+            flex-shrink: 0;
+        }
+
+        .status-version {
+            font-size: 0.75rem;
+            color: #707986;
+        }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 1023px) {
+            .login-page {
+                grid-template-columns: 1fr;
+            }
+
+            .login-image-panel {
+                display: none;
+            }
+
+            .login-panel {
+                height: 100vh;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-content {
+                padding: 24px;
+            }
+
+            .login-brand h1 {
+                font-size: 1.75rem;
+            }
+
+            .login-brand-logo {
+                width: 48px;
+                height: 48px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-page">
+        <!-- LEFT: Railway Image -->
+        <section class="login-image-panel">
+            <img src="{% static 'images/login-bg.jpg' %}" alt="Railway Operations" />
+            <div class="overlay"></div>
+        </section>
+
+        <!-- RIGHT: Login Panel -->
+        <section class="login-panel">
+            <div class="login-content">
+                <div class="login-form-container">
+                    <!-- Brand -->
+                    <div class="login-brand">
+                        <svg class="login-brand-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 14L12 11M12 11L15 14M12 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 7H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <h1>RAKSHAK</h1>
+                        <div class="login-brand-subtitle">Railway Operations Control Center</div>
+                    </div>
+
+                    <!-- Form -->
+                    <form method="post" class="login-form" id="loginForm">
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                        <div class="form-error">Invalid username or password.</div>
+                        {% endif %}
+
+                        <div class="form-group">
+                            <label for="id_username">Username</label>
+                            <div class="input-wrap">
+                                <svg class="icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 21V19C20 17.9 19.1 17 18 17H6C4.9 17 4 17.9 4 19V21"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <input type="text" id="id_username" name="username" placeholder="Enter your username" autofocus autocapitalize="none" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_password">Password</label>
+                            <div class="input-wrap">
+                                <svg class="icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                </svg>
+                                <input type="password" id="id_password" name="password" placeholder="Enter your password" required>
+                                <button type="button" class="toggle-password" id="togglePwd" aria-label="Toggle password visibility">
+                                    <svg class="icon-eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    <svg class="icon-eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                        <line x1="1" y1="1" x2="23" y2="23"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-options">
+                            <label class="remember-label">
+                                <input type="checkbox" name="remember_me">
+                                <span>Remember Me</span>
+                            </label>
+                            <a href="#" class="forgot-link">Forgot Password?</a>
+                        </div>
+
+                        <input type="hidden" name="next" value="{{ next }}">
+
+                        <button type="submit" class="btn-login" id="btnSubmit">
+                            <span class="spinner"></span>
+                            <span class="btn-text">Sign In</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Footer Status -->
+            <div class="login-status">
+                <div class="status-row">
+                    <span class="status-dot"></span>
+                    <span>All Systems Operational</span>
+                </div>
+                <div class="status-version">Version 2.3.1 (Build 458)</div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+    (function() {
+        var toggle = document.getElementById('togglePwd');
+        var pwd = document.getElementById('id_password');
+        var eyeOpen = toggle.querySelector('.icon-eye-open');
+        var eyeClosed = toggle.querySelector('.icon-eye-closed');
+
+        toggle.addEventListener('click', function() {
+            var isPassword = pwd.type === 'password';
+            pwd.type = isPassword ? 'text' : 'password';
+            eyeOpen.style.display = isPassword ? 'none' : 'block';
+            eyeClosed.style.display = isPassword ? 'block' : 'none';
+        });
+
+        var form = document.getElementById('loginForm');
+        var btn = document.getElementById('btnSubmit');
+        var btnText = btn.querySelector('.btn-text');
+
+        form.addEventListener('submit', function() {
+            if (form.checkValidity()) {
+                btn.classList.add('is-loading');
+                btnText.textContent = 'Signing In\u2026';
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

@@ -1,156 +1,304 @@
-<!-- frontend/templates/tickets.html -->
-<!--
-  Tickets page — maintenance ticket management view.
-  Shows ticket table with status badges, priority, assigned engineer, and ETA.
--->
 {% extends "base.html" %}
 {% load static %}
 
 {% block content %}
-<div class="tickets-page">
+<div class="ops-page tickets-page">
+    <div class="header-row ops-page-header">
+        <div class="greeting">
+            <h1>Tickets <span class="user-name">Desk</span></h1>
+            <p>{{ summary.open }} open - {{ summary.assigned }} assigned - {{ summary.critical_priority }} critical priority</p>
+        </div>
+        <div class="header-actions">
+            <div class="search-pill ops-search-pill ops-search-input">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6f6579" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                <input type="text" id="ticket-search" placeholder="Search tickets..." autocomplete="off" aria-label="Search tickets">
+                <button class="search-clear-btn" id="search-clear-btn" type="button" aria-label="Clear search">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                </button>
+            </div>
+            <div class="tab-group ops-tabs">
+                <a class="tab {% if current_filter == 'all' %}tab--active{% endif %}" href="?status=all">All</a>
+                <a class="tab {% if current_filter == 'open' %}tab--active{% endif %}" href="?status=open">Open</a>
+                <a class="tab {% if current_filter == 'assigned' %}tab--active{% endif %}" href="?status=assigned">Assigned</a>
+                <a class="tab {% if current_filter == 'resolved' %}tab--active{% endif %}" href="?status=resolved">Resolved</a>
+            </div>
+        </div>
+    </div>
 
-    <!-- ================================================================ -->
-    <!-- TICKET SUMMARY BAR                                               -->
-    <!-- ================================================================ -->
-    <section class="ticket-summary" id="ticket-summary">
-        <div class="summary-cards">
-            <div class="summary-card summary-card--total">
-                <div class="summary-value">{{ summary.total }}</div>
-                <div class="summary-label">Total Tickets</div>
-            </div>
-            <div class="summary-card summary-card--critical">
-                <div class="summary-value">{{ summary.assigned }}</div>
-                <div class="summary-label">Assigned</div>
-            </div>
-            <div class="summary-card summary-card--warning">
-                <div class="summary-value">{{ summary.scheduled }}</div>
-                <div class="summary-label">Scheduled</div>
-            </div>
-            <div class="summary-card summary-card--info">
-                <div class="summary-value">{{ summary.resolved }}</div>
-                <div class="summary-label">Resolved</div>
-            </div>
-            <div class="summary-card summary-card--active">
-                <div class="summary-value">{{ summary.critical_priority }}</div>
-                <div class="summary-label">Critical Priority</div>
-            </div>
+    <section class="ops-summary-grid" aria-label="Ticket summary">
+        <div class="card kpi ops-summary-card">
+            <div class="kpi-head"><span class="kpi-label">Total</span><span class="kpi-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v2a2 2 0 0 1 0 4v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a2 2 0 0 1 0-4V9a2 2 0 0 0-2-2z"></path></svg></span></div>
+            <div class="kpi-value"><b class="num">{{ summary.total }}</b><span class="kpi-unit">tickets</span></div>
+            <div class="kpi-delta"><span class="lbl">maintenance work orders</span></div>
+        </div>
+        <div class="card kpi ops-summary-card ops-summary-card--critical">
+            <div class="kpi-head"><span class="kpi-label">Critical</span><span class="kpi-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></span></div>
+            <div class="kpi-value"><b class="num">{{ summary.critical_priority }}</b><span class="kpi-unit">priority</span></div>
+            <div class="kpi-delta"><span class="val neg">dispatch first</span></div>
+        </div>
+        <div class="card kpi ops-summary-card ops-summary-card--warning">
+            <div class="kpi-head"><span class="kpi-label">Assigned</span><span class="kpi-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-8 0v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span></div>
+            <div class="kpi-value"><b class="num">{{ summary.assigned }}</b><span class="kpi-unit">teams</span></div>
+            <div class="kpi-delta"><span class="val warn">{{ summary.scheduled }} scheduled</span></div>
+        </div>
+        <div class="card kpi ops-summary-card ops-summary-card--info">
+            <div class="kpi-head"><span class="kpi-label">In Progress</span><span class="kpi-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"></path><path d="M12 18v4"></path><path d="m4.93 4.93 2.83 2.83"></path><path d="m16.24 16.24 2.83 2.83"></path><path d="M2 12h4"></path><path d="M18 12h4"></path></svg></span></div>
+            <div class="kpi-value"><b class="num">{{ summary.in_progress }}</b><span class="kpi-unit">active</span></div>
+            <div class="kpi-delta"><span class="val pos">field work</span></div>
+        </div>
+        <div class="card kpi ops-summary-card">
+            <div class="kpi-head"><span class="kpi-label">Resolved</span><span class="kpi-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span></div>
+            <div class="kpi-value"><b class="num">{{ summary.resolved }}</b><span class="kpi-unit">closed</span></div>
+            <div class="kpi-delta"><span class="lbl">ready for audit</span></div>
         </div>
     </section>
 
-    <!-- ================================================================ -->
-    <!-- FILTER CONTROLS                                                  -->
-    <!-- ================================================================ -->
-    <section class="filter-bar" id="ticket-filters">
-        <div class="filter-group">
-            <span class="filter-label">Filter by Status:</span>
-            <a href="?status=all"
-               class="filter-btn {% if current_filter == 'all' %}filter-btn--active{% endif %}"
-               id="filter-status-all">All</a>
-            <a href="?status=assigned"
-               class="filter-btn filter-btn--critical {% if current_filter == 'assigned' %}filter-btn--active{% endif %}"
-               id="filter-status-assigned">Assigned</a>
-            <a href="?status=scheduled"
-               class="filter-btn filter-btn--warning {% if current_filter == 'scheduled' %}filter-btn--active{% endif %}"
-               id="filter-status-scheduled">Scheduled</a>
-            <a href="?status=resolved"
-               class="filter-btn filter-btn--info {% if current_filter == 'resolved' %}filter-btn--active{% endif %}"
-               id="filter-status-resolved">Resolved</a>
+    <section class="ops-filter-bar ops-ticket-filters" id="ticket-filters" aria-label="Ticket filters">
+        <div class="ops-filter-group">
+            <span class="sub-label">Filter</span>
+            <select id="filter-section" class="filter-select" aria-label="Filter by section">
+                <option value="">Zone: All</option>
+                {% for section in filter_sections %}
+                <option value="{{ section }}">{{ section }}</option>
+                {% endfor %}
+            </select>
+            <select id="filter-status" class="filter-select" aria-label="Filter by status">
+                <option value="">Status: Any</option>
+                {% for status in filter_statuses %}
+                <option value="{{ status }}">
+                    {% if status == 'in_progress' %}In Progress{% else %}{{ status|title }}{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+            <select id="filter-team" class="filter-select" aria-label="Filter by team">
+                <option value="">Team: Any</option>
+                {% for team in filter_teams %}
+                <option value="{{ team }}">{{ team }}</option>
+                {% endfor %}
+            </select>
+            <select id="filter-missing" class="filter-select" aria-label="Filter by readiness">
+                <option value="">Readiness: Any</option>
+                <option value="false">Ready</option>
+                <option value="true">Needs Inputs</option>
+            </select>
+            <button class="btn-pill ghost" type="button" id="filter-reset-btn">Reset</button>
         </div>
+        <div class="ops-result-count" id="filter-result-count">Showing <b>{{ tickets|length }}</b> of {{ display_total }} tickets</div>
     </section>
 
-    <!-- ================================================================ -->
-    <!-- TICKET TABLE                                                     -->
-    <!-- ================================================================ -->
-    <section class="ticket-table-section" id="ticket-list">
-        <div class="data-card">
-            <h2 class="section-title">
-                <span class="section-icon">🎫</span>
-                Maintenance Tickets
-            </h2>
-            <div class="table-wrapper">
-                <table class="data-table" id="tickets-table">
-                    <thead>
-                        <tr>
-                            <th>Ticket ID</th>
-                            <th>Linked Alert</th>
-                            <th>Track Section</th>
-                            <th>Issue</th>
-                            <th>Team</th>
-                            <th>Priority</th>
-                            <th>Status</th>
-                            <th>ETA</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for ticket in tickets %}
-                        <tr id="ticket-{{ ticket.id }}">
-                            <td class="td-mono">{{ ticket.id }}</td>
-                            <td class="td-mono" style="color: var(--accent-cyan);">{{ ticket.linked_alert }}</td>
-                            <td>
-                                <div class="cell-track">
-                                    <span class="track-section">{{ ticket.section }}</span>
-                                    <span class="track-id">{{ ticket.track_id }}</span>
-                                </div>
-                            </td>
-                            <td>{{ ticket.issue }}</td>
-                            <td>{{ ticket.team }}</td>
-                            <td>
-                                <span class="priority-badge priority-badge--{{ ticket.priority }}">
-                                    {{ ticket.priority|title }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="status-badge status-badge--{{ ticket.status }}">
-                                    {{ ticket.status|title }}
-                                </span>
-                            </td>
-                            <td class="td-mono">{{ ticket.eta }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="8" class="empty-cell">No tickets matching the current filter.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </section>
+    <div class="ops-state ops-state--loading" id="filter-loading" style="display:none;">
+        <span class="loading-spinner"></span>
+        <span>Loading tickets...</span>
+    </div>
 
-    <!-- ================================================================ -->
-    <!-- TICKET DETAIL CARDS (mobile-friendly alternative view)           -->
-    <!-- ================================================================ -->
-    <section class="ticket-cards-section" id="ticket-cards">
+    <div class="ops-state ops-state--error" id="filter-error" style="display:none;">
+        <span id="filter-error-msg">Could not load tickets.</span>
+        <button class="btn-pill ghost" type="button" id="filter-retry-btn">Retry</button>
+    </div>
+
+    <div class="ops-state ops-state--empty" id="filter-empty" style="display:none;">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--gold-soft)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+        <span>No tickets match the current filters.</span>
+        <button class="btn-pill primary" type="button" id="filter-empty-reset-btn">Reset</button>
+    </div>
+
+    <section class="ops-list" id="ticket-cards" aria-label="Tickets">
         {% for ticket in tickets %}
-        <div class="ticket-card ticket-card--{{ ticket.priority }}" id="tcard-{{ ticket.id }}">
-            <div class="ticket-card-header">
-                <span class="td-mono">{{ ticket.id }}</span>
-                <span class="priority-badge priority-badge--{{ ticket.priority }}">
-                    {{ ticket.priority|title }}
-                </span>
+        <article class="ops-list-card ticket-row ticket-row--{{ ticket.priority }}" id="ticket-{{ ticket.id }}">
+            <div class="ops-row-icon">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v2a2 2 0 0 1 0 4v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a2 2 0 0 1 0-4V9a2 2 0 0 0-2-2z"></path></svg>
             </div>
-            <h3 class="ticket-card-title">{{ ticket.issue }}</h3>
-            <div class="ticket-card-details">
-                <div class="ticket-card-detail">
-                    <span>🔗 Alert: <span style="color: var(--accent-cyan);" class="td-mono">{{ ticket.linked_alert }}</span></span>
+            <div class="ops-row-body">
+                <div class="ops-row-meta">
+                    <span class="priority-badge priority-badge--{{ ticket.priority }}">{{ ticket.priority_label }}</span>
+                    <span class="ops-code mono">{{ ticket.id }}</span>
+                    <span class="ops-code mono">{{ ticket.track_id }}</span>
+                    <span class="status-badge status-badge--{{ ticket.status }}">{{ ticket.status_label }}</span>
                 </div>
-                <div class="ticket-card-detail">
-                    <span>🛤️ {{ ticket.section }}</span>
-                </div>
-                <div class="ticket-card-detail">
-                    <span>👥 {{ ticket.team }}</span>
-                </div>
-                <div class="ticket-card-detail">
-                    <span>⏱️ ETA: {{ ticket.eta }}</span>
-                </div>
+                <h2 class="ops-row-title">{{ ticket.issue }}</h2>
+                <p class="ops-row-copy">{{ ticket.section }} - {{ ticket.zone }} - {{ ticket.team }} - ETA {{ ticket.eta }}</p>
             </div>
-            <div class="ticket-card-footer">
-                <span class="status-badge status-badge--{{ ticket.status }}">
-                    {{ ticket.status|title }}
-                </span>
+            <div class="ops-row-actions">
+                <span class="ops-row-time mono">{{ ticket.time_ago }}</span>
+                {% if ticket.is_ready_for_ai %}
+                <span class="readiness-badge readiness-badge--ready">Ready</span>
+                {% else %}
+                <span class="readiness-badge readiness-badge--missing">Needs inputs</span>
+                {% endif %}
             </div>
+        </article>
+        {% empty %}
+        <div class="card empty-state">
+            <p>No tickets matching the current filter.</p>
         </div>
         {% endfor %}
     </section>
 </div>
+
+<script>
+(function () {
+    "use strict";
+
+    const searchInput = document.getElementById("ticket-search");
+    const clearBtn = document.getElementById("search-clear-btn");
+    const sectionSel = document.getElementById("filter-section");
+    const statusSel = document.getElementById("filter-status");
+    const teamSel = document.getElementById("filter-team");
+    const missingSel = document.getElementById("filter-missing");
+    const resetBtn = document.getElementById("filter-reset-btn");
+    const emptyResetBtn = document.getElementById("filter-empty-reset-btn");
+    const retryBtn = document.getElementById("filter-retry-btn");
+    const cards = document.getElementById("ticket-cards");
+    const loading = document.getElementById("filter-loading");
+    const errorEl = document.getElementById("filter-error");
+    const errorMsg = document.getElementById("filter-error-msg");
+    const emptyEl = document.getElementById("filter-empty");
+    const resultCount = document.getElementById("filter-result-count");
+
+    if (!searchInput || !cards) return;
+
+    let debounceTimer = null;
+    let lastParams = {};
+
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function getParams() {
+        return {
+            search: searchInput.value.trim(),
+            section: sectionSel.value,
+            status: statusSel.value,
+            team: teamSel.value,
+            missing_data: missingSel.value,
+        };
+    }
+
+    function buildQuery(params) {
+        const qs = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value) qs.set(key, value);
+        });
+        return qs.toString();
+    }
+
+    function setState(state) {
+        loading.style.display = "none";
+        errorEl.style.display = "none";
+        emptyEl.style.display = "none";
+        cards.style.display = "";
+
+        if (state === "loading") {
+            loading.style.display = "flex";
+            cards.style.display = "none";
+        } else if (state === "error") {
+            errorEl.style.display = "flex";
+            cards.style.display = "none";
+        } else if (state === "empty") {
+            emptyEl.style.display = "flex";
+            cards.style.display = "none";
+        }
+    }
+
+    function renderCount(total, shown) {
+        const visible = Number(shown || 0);
+        const all = Number(total || 0);
+        if (visible && visible < all) {
+            resultCount.innerHTML = `Showing <b>${escapeHtml(visible)}</b> of ${escapeHtml(all)} tickets`;
+        } else {
+            resultCount.innerHTML = `Showing <b>${escapeHtml(all)}</b> tickets`;
+        }
+    }
+
+    function renderTickets(tickets) {
+        cards.innerHTML = tickets.map((ticket) => {
+            const ready = ticket.is_ready_for_ai
+                ? '<span class="readiness-badge readiness-badge--ready">Ready</span>'
+                : '<span class="readiness-badge readiness-badge--missing">Needs inputs</span>';
+
+            return `
+                <article class="ops-list-card ticket-row ticket-row--${escapeHtml(ticket.priority)}" id="ticket-${escapeHtml(ticket.id)}">
+                    <div class="ops-row-icon">
+                        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v2a2 2 0 0 1 0 4v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a2 2 0 0 1 0-4V9a2 2 0 0 0-2-2z"></path></svg>
+                    </div>
+                    <div class="ops-row-body">
+                        <div class="ops-row-meta">
+                            <span class="priority-badge priority-badge--${escapeHtml(ticket.priority)}">${escapeHtml(ticket.priority_label)}</span>
+                            <span class="ops-code mono">${escapeHtml(ticket.id)}</span>
+                            <span class="ops-code mono">${escapeHtml(ticket.track_id)}</span>
+                            <span class="status-badge status-badge--${escapeHtml(ticket.status)}">${escapeHtml(ticket.status_label)}</span>
+                        </div>
+                        <h2 class="ops-row-title">${escapeHtml(ticket.issue)}</h2>
+                        <p class="ops-row-copy">${escapeHtml(ticket.section)} - ${escapeHtml(ticket.zone)} - ${escapeHtml(ticket.team)} - ETA ${escapeHtml(ticket.eta)}</p>
+                    </div>
+                    <div class="ops-row-actions">
+                        <span class="ops-row-time mono">${escapeHtml(ticket.time_ago)}</span>
+                        ${ready}
+                    </div>
+                </article>`;
+        }).join("");
+    }
+
+    async function fetchTickets(params) {
+        lastParams = params;
+        setState("loading");
+
+        try {
+            const query = buildQuery(params);
+            const response = await fetch(`/tickets/api/search/${query ? "?" + query : ""}`, {
+                credentials: "same-origin",
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+
+            renderCount(data.total, data.shown || data.tickets.length);
+            if (!data.tickets.length) {
+                setState("empty");
+                cards.innerHTML = "";
+                return;
+            }
+
+            renderTickets(data.tickets);
+            setState("results");
+        } catch (error) {
+            errorMsg.textContent = `Could not load tickets: ${error.message}`;
+            setState("error");
+        }
+    }
+
+    function triggerFilter() {
+        window.clearTimeout(debounceTimer);
+        clearBtn.style.display = searchInput.value ? "grid" : "none";
+        debounceTimer = window.setTimeout(() => fetchTickets(getParams()), 240);
+    }
+
+    function resetFilters() {
+        searchInput.value = "";
+        sectionSel.value = "";
+        statusSel.value = "";
+        teamSel.value = "";
+        missingSel.value = "";
+        clearBtn.style.display = "none";
+        fetchTickets({});
+    }
+
+    searchInput.addEventListener("input", triggerFilter);
+    sectionSel.addEventListener("change", triggerFilter);
+    statusSel.addEventListener("change", triggerFilter);
+    teamSel.addEventListener("change", triggerFilter);
+    missingSel.addEventListener("change", triggerFilter);
+    clearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        triggerFilter();
+    });
+    resetBtn.addEventListener("click", resetFilters);
+    emptyResetBtn.addEventListener("click", resetFilters);
+    retryBtn.addEventListener("click", () => fetchTickets(lastParams));
+})();
+</script>
 {% endblock %}

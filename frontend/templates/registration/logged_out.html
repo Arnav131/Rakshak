@@ -1,0 +1,18 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAKSHAK — Logged Out</title>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=4">
+</head>
+<body>
+    <main class="login-main">
+        <div class="login-card">
+            <h1 class="brand-name">You have been logged out.</h1>
+            <p><a href="{% url 'login' %}">Sign back in</a></p>
+        </div>
+    </main>
+</body>
+</html>
