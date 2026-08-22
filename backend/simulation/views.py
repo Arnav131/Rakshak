@@ -108,9 +108,15 @@ def _find_route(from_code: str, to_code: str):
     if to_code not in visited and to_code != from_code:
         return None, 0
 
+    # Same station — no path needed
+    if from_code == to_code:
+        return [stations[from_code]], 0.0
+
     # Reconstruct path
     path = [to_code]
     while path[-1] != from_code:
+        if path[-1] not in prev:
+            return None, 0  # No path exists (disconnected graph)
         path.append(prev[path[-1]])
     path.reverse()
 

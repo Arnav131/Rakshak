@@ -113,6 +113,10 @@ if DATABASE_URL:
         )
     }
 elif all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT]):
+    _ssl_mode = os.environ.get('DB_SSLMODE', 'prefer')
+    _db_options = {}
+    if _ssl_mode and _ssl_mode != 'disable':
+        _db_options['sslmode'] = _ssl_mode
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -122,9 +126,7 @@ elif all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT]):
             'HOST': DB_HOST,
             'PORT': DB_PORT,
             'CONN_MAX_AGE': int(os.environ.get('DATABASE_CONN_MAX_AGE', '0')),
-            'OPTIONS': {
-                'sslmode': 'require',
-            }
+            'OPTIONS': _db_options,
         }
     }
 else:

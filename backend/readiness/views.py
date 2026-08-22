@@ -137,7 +137,10 @@ def api_submit_decision(request, case_code):
         data = request.POST
 
     decision = data.get("decision")  # 'ready', 'conditionally_ready', 'not_ready'
-    speed_kmph = int(data.get("speed_kmph", 0))
+    try:
+        speed_kmph = int(data.get("speed_kmph", 0))
+    except (ValueError, TypeError):
+        return JsonResponse({"status": "error", "message": "speed_kmph must be an integer"}, status=400)
     notes = data.get("notes", "")
     conditions = data.get("conditions", "")
     is_override = bool(data.get("is_override", False))

@@ -40,7 +40,30 @@ def alerts_page(request):
     for alert in filtered_qs:
         generated_at = alert.generated_at or alert.created_at or now
         age = timesince(generated_at, now).split(",")[0]
-        zone = alert.track_section.start_station.division.zone
+
+        # Defensive: track_section and its chain could be None if data is incomplete
+        track_section = alert.track_section
+        if track_section and track_section.start_station and track_section.start_station.division:
+            zone = track_section.start_station.division.zone
+            zone_name = zone.name if zone else "Unknown"
+            zone_code = zone.code if zone else "?"
+            station_name = track_section.start_station.station_name
+        else:
+            zone_name = "Unknown"
+            zone_code = "?"
+            station_name = "Unknown"
+
+        section_code = track_section.section_code if track_section else "N/A"
+        end_station_name = (
+            track_section.end_station.station_name
+            if track_section and track_section.end_station
+            else "Unknown"
+        )
+        section_label = (
+            f"{station_name} - {end_station_name}"
+            if track_section
+            else "N/A"
+        )
         sensor_code = alert.sensor.sensor_code if alert.sensor else "Sensor network"
 
         alerts.append(
@@ -49,14 +72,11 @@ def alerts_page(request):
                 "severity": alert.severity,
                 "title": alert.title,
                 "description": alert.description,
-                "track_id": alert.track_section.section_code,
-                "section": (
-                    f"{alert.track_section.start_station.station_name} - "
-                    f"{alert.track_section.end_station.station_name}"
-                ),
-                "station": alert.track_section.start_station.station_name,
-                "zone": zone.name,
-                "zone_code": zone.code,
+                "track_id": section_code,
+                "section": section_label,
+                "station": station_name,
+                "zone": zone_name,
+                "zone_code": zone_code,
                 "sensor": sensor_code,
                 "timestamp": generated_at.strftime("%Y-%m-%d %H:%M"),
                 "time_ago": f"{age} ago",

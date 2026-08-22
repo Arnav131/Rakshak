@@ -248,9 +248,10 @@ def api_tickets(request):
         .order_by("-created_at")[:200]  # Limit to 200 newest tickets for map performance
     )
 
-    # Seed random with fixed value for deterministic offsets
-    # This ensures tickets don't jump around on page reload
-    random.seed(99)
+    # Use a LOCAL Random instance seeded with a fixed value for deterministic offsets.
+    # IMPORTANT: Do NOT use random.seed() on the global instance — it corrupts random
+    # state for all other code in this process (simulation generator, etc.).
+    rng = random.Random(99)
 
     data = []
     for t in tickets:
@@ -261,8 +262,8 @@ def api_tickets(request):
 
         # Apply small random offset so overlapping tickets are visually distinct
         # Offset range: ±0.05 degrees (~5.5 km at equator)
-        lat = _decimal_to_float(sta.latitude) + random.uniform(-0.05, 0.05)
-        lng = _decimal_to_float(sta.longitude) + random.uniform(-0.05, 0.05)
+        lat = _decimal_to_float(sta.latitude) + rng.uniform(-0.05, 0.05)
+        lng = _decimal_to_float(sta.longitude) + rng.uniform(-0.05, 0.05)
 
         # Build the ticket data dictionary
         data.append({
@@ -402,8 +403,9 @@ def api_trains(request):
 
     # Pick ~20 random routes to simulate trains on
     # Seed changes every 10 seconds for smooth animation
-    random.seed(int(time.time()) // 10)  # Integer division creates 10-second buckets
-    train_routes = random.sample(sections, k=min(20, len(sections)))
+    # Use a LOCAL Random instance — do NOT call random.seed() on the global instance.
+    rng = random.Random(int(time.time()) // 10)
+    train_routes = rng.sample(sections, k=min(20, len(sections)))
 
     trains = []
     for i, route in enumerate(train_routes):
@@ -441,7 +443,7 @@ def api_trains(request):
             "lat": round(lat, 6),             # Current latitude
             "lng": round(lng, 6),             # Current longitude
             "progress": round(progress, 3),   # How far along the route (0.0-1.0)
-            "speed_kmph": random.randint(60, 160),  # Current speed in km/h
+            "speed_kmph": rng.randint(60, 160),  # Current speed in km/h
         })
 
     return JsonResponse(trains, safe=False)
