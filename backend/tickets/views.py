@@ -1,7 +1,10 @@
 # backend/tickets/views.py
+from django.contrib.auth.decorators import login_required
+
 from django.shortcuts import render
 from railway.models import Ticket
 
+@login_required
 
 def tickets_page(request):
     status_filter = request.GET.get('status', 'all')

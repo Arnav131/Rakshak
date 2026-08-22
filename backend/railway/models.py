@@ -19,7 +19,7 @@ Constraints:
     - PROTECT on all critical infrastructure FK targets
     - DecimalField for all measurements and coordinates
     - UUIDField for sensor hardware identity
-    - SQLite compatible, PostgreSQL ready
+    - PostgreSQL ready
 """
 
 import uuid
@@ -1430,6 +1430,7 @@ class AuditLog(models.Model):
         STATUS_CHANGE = "status_change", "Status Change"
         ESCALATION = "escalation", "Escalation"
         LOGIN = "login", "Login"
+        LOGOUT = "logout", "Logout"
         SYSTEM = "system", "System"
 
     class ActorType(models.TextChoices):

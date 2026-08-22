@@ -1,0 +1,77 @@
+{
+  "version": "2.2.0",
+  "engine_mode": "sequence_cnn1d_streaming",
+  "window_size": 16,
+  "stride": 8,
+  "feature_order": [
+    "ambient_temp",
+    "humidity",
+    "vibration_rms",
+    "gauge_width"
+  ],
+  "standard_gauge_mm": 1676.0,
+  "risk_model": {
+    "file": "anomaly_model.pkl",
+    "type": "cnn1d_sequence",
+    "class_names": [
+      "none",
+      "warning",
+      "critical"
+    ]
+  },
+  "fault_model": {
+    "file": "fault_model.pkl",
+    "type": "cnn1d_sequence",
+    "class_names": [
+      "normal",
+      "CG_MON_EMBANKSLIP",
+      "CG_MON_HEAVYRAIN",
+      "CG_MON_SUBGRADE",
+      "CG_MON_WASHOUT",
+      "CG_SUM_HIGHHUMID",
+      "CG_SUM_SALINECORR",
+      "CG_WIN_COASTALWIND",
+      "CG_WIN_NORMAL",
+      "DP_MON_BALLASTSOFT",
+      "DP_MON_EMBANKSETTLE",
+      "DP_MON_MODERATE",
+      "DP_SUM_BUCKLEPRECUR",
+      "DP_SUM_NORMAL",
+      "DP_SUM_ROCKVIB",
+      "DP_SUM_TIEPLATE",
+      "DP_WIN_JUNCTIONSTRESS",
+      "DP_WIN_NORMAL",
+      "HIM_MON_ROCKFALL",
+      "HIM_SPR_NORMAL",
+      "HIM_SPR_THAW",
+      "HIM_SUM_NORMAL",
+      "HIM_WIN_FROSTCRACK",
+      "HIM_WIN_RAILFRACTURE",
+      "HIM_WIN_SNOWICE",
+      "HIM_WIN_SUBZERO",
+      "NP_MON_BALLASTWASH",
+      "NP_MON_MODERATE",
+      "NP_SUM_GAUGEWIDEN",
+      "NP_SUM_NORMAL",
+      "NP_SUM_THERMALBUCKLE",
+      "NP_WIN_DENSEFOG",
+      "NP_WIN_RAILJOINT",
+      "TD_MON_FLASHFLOOD",
+      "TD_SUM_BUCKLE",
+      "TD_SUM_NORMAL",
+      "TD_SUM_RAILCREEP",
+      "TD_SUM_SANDINGRESS",
+      "TD_SUM_SEVERHEAT",
+      "TD_WIN_DIURNAL",
+      "TD_WIN_NORMAL"
+    ]
+  },
+  "training_info": {
+    "total_files": 1000,
+    "train_files": 850,
+    "val_files": 150,
+    "risk_best_val_acc": 0.69303,
+    "fault_best_val_acc": 0.62895,
+    "trained_on": "Google Colab GPU (streaming, no full extraction)"
+  }
+}
