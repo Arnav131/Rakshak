@@ -1,8 +1,9 @@
 # backend/alerts/views.py
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from railway.models import Alert
 
-
+@login_required
 def alerts_page(request):
     """Display alerts with optional severity filtering and summary statistics."""
     severity_filter = request.GET.get('severity', 'all')
