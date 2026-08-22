@@ -24,6 +24,7 @@ from railway.models import (
     SensorReading,
     SensorType,
     Station,
+    Ticket,
     TrackSection,
     Zone,
     TicketStatusLog,
@@ -60,30 +61,29 @@ def _build_critical_alerts():
 def _build_operator_activity():
     """Build recent operator activity logs."""
     try:
-        logs = TicketStatusLog.objects.select_related('user').order_by('-created_at')[:5]
+        logs = (
+            TicketStatusLog.objects
+            .select_related('ticket')
+            .order_by('-changed_at', '-created_at')[:8]
+        )
         result = []
         for log in logs:
-            user_name = log.user.username if getattr(log, 'user', None) else 'system'
-            action = getattr(log, 'notes', None) or getattr(log, 'status_change', 'Updated ticket')
-            time_str = log.created_at.strftime('%H:%M:%S') if getattr(log, 'created_at', None) else '12:00:00'
+            user_name = getattr(log, 'changed_by', '') or 'system'
+            ticket_code = log.ticket.ticket_code if getattr(log, 'ticket', None) else 'ticket'
+            action = (
+                getattr(log, 'notes', None)
+                or f"moved {ticket_code} from {log.from_status} to {log.to_status}"
+            )
+            logged_at = getattr(log, 'changed_at', None) or getattr(log, 'created_at', None)
+            time_str = logged_at.strftime('%H:%M:%S') if logged_at else '--:--:--'
             result.append({
                 'time': time_str,
                 'user': user_name,
                 'action': action,
             })
-        if result:
-            return result
+        return result
     except Exception:
-        pass
-        
-    # Fallback if table is empty or error occurs
-    return [
-        {'time': '10:42:15', 'user': 'operator1', 'action': 'Acknowledged Alert ALRT-901'},
-        {'time': '10:35:00', 'user': 'system', 'action': 'Generated daily report'},
-        {'time': '10:15:22', 'user': 'operator2', 'action': 'Created maintenance ticket #102'},
-        {'time': '09:50:11', 'user': 'operator1', 'action': 'Resolved Alert ALRT-880'},
-        {'time': '09:30:05', 'user': 'system', 'action': 'Automated diagnostics completed'},
-    ]
+        return []
 
 
 def _derive_track_health(track_section, alert_counts):
@@ -117,6 +117,9 @@ def _build_kpi(alert_qs, track_section_count):
     predicted_failures = alert_qs.filter(
         severity='critical', status='active'
     ).count()
+    open_tickets = Ticket.objects.exclude(
+        status__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED]
+    ).count()
 
     # Overall health: ratio of track sections with no active alerts
     sections_with_alerts = (
@@ -137,7 +140,7 @@ def _build_kpi(alert_qs, track_section_count):
         'overall_health': overall_health,
         'active_alerts': active_alerts,
         'predicted_failures': predicted_failures,
-        'cost_savings': 24_50_000,  # ₹24.5 Lakhs — constant for Phase 1
+        'open_tickets': open_tickets,
         'tracks_monitored': track_section_count,
     }
 
@@ -155,7 +158,7 @@ def _build_track_sections():
             'start_station__division__zone',
             'end_station',
         )
-        .order_by('section_code')[:8]  # Dashboard shows top 8
+        .order_by('section_code')[:20]
     )
 
     # Batch-fetch active alert counts per track section, grouped by severity
@@ -200,6 +203,58 @@ def _build_track_sections():
         })
 
     return result
+
+
+def _build_system_summary():
+    """Build doughnut chart data from real system tables."""
+    total_tracks = TrackSection.objects.count()
+    critical_section_ids = set(
+        Alert.objects
+        .filter(status=Alert.Status.ACTIVE, severity=Alert.Severity.CRITICAL)
+        .values_list('track_section_id', flat=True)
+        .distinct()
+    )
+    warning_section_ids = set(
+        Alert.objects
+        .filter(
+            status=Alert.Status.ACTIVE,
+            severity__in=[Alert.Severity.WARNING, Alert.Severity.INFO],
+        )
+        .values_list('track_section_id', flat=True)
+        .distinct()
+    ) - critical_section_ids
+
+    critical_tracks = len(critical_section_ids)
+    warning_tracks = len(warning_section_ids)
+    healthy_tracks = max(total_tracks - critical_tracks - warning_tracks, 0)
+    active_alerts = Alert.objects.filter(status=Alert.Status.ACTIVE).count()
+    open_tickets = Ticket.objects.exclude(
+        status__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED]
+    ).count()
+
+    return {
+        'labels': [
+            'Healthy Tracks',
+            'Warning Tracks',
+            'Critical Tracks',
+            'Active Alerts',
+            'Open Tickets',
+        ],
+        'values': [
+            healthy_tracks,
+            warning_tracks,
+            critical_tracks,
+            active_alerts,
+            open_tickets,
+        ],
+        'total': (
+            healthy_tracks
+            + warning_tracks
+            + critical_tracks
+            + active_alerts
+            + open_tickets
+        ),
+    }
 
 
 def _build_recent_readings():
@@ -333,13 +388,15 @@ def dashboard(request):
     """Render the main dashboard page."""
     track_section_count = TrackSection.objects.count()
     alert_qs = Alert.objects.all()
+    track_sections = _build_track_sections()
 
     context = {
         'page_title': 'Dashboard',
         'kpi': _build_kpi(alert_qs, track_section_count),
-        'track_sections': _build_track_sections(),
+        'track_sections': track_sections,
         'recent_readings': _build_recent_readings(),
         'sensor_trends_json': _build_sensor_trends(),
+        'system_summary_json': _build_system_summary(),
         'critical_alerts': _build_critical_alerts(),
         'operator_activity': _build_operator_activity(),
     }

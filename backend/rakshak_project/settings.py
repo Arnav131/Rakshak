@@ -20,7 +20,8 @@ from dotenv import load_dotenv
 # Build paths relative to the backend/ directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from project root
+# Load environment variables from project root or backend directory
+load_dotenv(BASE_DIR.parent / '.env')
 load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -50,6 +51,8 @@ INSTALLED_APPS = [
     'railway',
     'ai_integration',
     'simulation',
+    'readiness',
+    'patrol',
 ]
 
 MIDDLEWARE = [
@@ -92,34 +95,45 @@ TEMPLATES = [
 WSGI_APPLICATION = 'rakshak_project.wsgi.application'
 
 # ---------------------------------------------------------------------------
-# Database - Supabase/PostgreSQL only
+# Database - Supabase/PostgreSQL with dev fallback
 # ---------------------------------------------------------------------------
+DATABASE_URL = os.environ.get('DATABASE_URL')
 DB_NAME = os.environ.get('DB_NAME')
 DB_USER = os.environ.get('DB_USER')
 DB_PASSWORD = os.environ.get('DB_PASSWORD')
 DB_HOST = os.environ.get('DB_HOST')
 DB_PORT = os.environ.get('DB_PORT')
 
-if not all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT]):
-    raise ImproperlyConfigured(
-        'Database connection environment variables are missing. '
-        'Please set DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, and DB_PORT in your .env file.'
-    )
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': DB_NAME,
-        'USER': DB_USER,
-        'PASSWORD': DB_PASSWORD,
-        'HOST': DB_HOST,
-        'PORT': DB_PORT,
-        'CONN_MAX_AGE': int(os.environ.get('DATABASE_CONN_MAX_AGE', '0')),
-        'OPTIONS': {
-            'sslmode': 'disable',
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=int(os.environ.get('DATABASE_CONN_MAX_AGE', '0')),
+            ssl_require=True if 'supabase' in DATABASE_URL or 'sslmode=require' in DATABASE_URL else False,
+        )
+    }
+elif all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT]):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': DB_NAME,
+            'USER': DB_USER,
+            'PASSWORD': DB_PASSWORD,
+            'HOST': DB_HOST,
+            'PORT': DB_PORT,
+            'CONN_MAX_AGE': int(os.environ.get('DATABASE_CONN_MAX_AGE', '0')),
+            'OPTIONS': {
+                'sslmode': 'require',
+            }
         }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # ---------------------------------------------------------------------------
 # Static files — served from frontend/static/

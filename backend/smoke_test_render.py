@@ -1,5 +1,7 @@
 import sys
 import os
+#Je;;p
+
 
 # add backend dir to path
 sys.path.append(r'c:\Users\devil\Downloads\PROTOTYPE_1.0\backend')

@@ -7,4 +7,6 @@ app_name = "simulation_api"
 
 urlpatterns = [
     path("run/", views.api_run_simulation, name="run"),
+    path("stations/", views.api_stations, name="stations"),
+    path("route/", views.api_route, name="route"),
 ]

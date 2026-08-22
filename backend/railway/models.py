@@ -1188,6 +1188,504 @@ class TicketStatusLog(TimeStampedModel):
 
 
 # ===================================================================
+# OPERATIONAL READINESS LAYER
+# ===================================================================
+
+class OperationalReadinessCase(TimeStampedModel):
+    """
+    Operational readiness assessment case for a track section or asset.
+
+    Captures the isolated state, sensor metric window, checklist sign-offs,
+    and final operational decision required before restoring traffic or
+    closing a maintenance intervention.
+    """
+
+    class CaseType(models.TextChoices):
+        TRACK_REOPENING = "track_reopening", "Track Re-Opening & Speed Clearance"
+        ROUTE_DEPARTURE = "route_departure", "Train Route Departure Clearance"
+
+    class WorkflowStatus(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        UNDER_REVIEW = "under_review", "Under Review"
+        FIELD_VERIFICATION = "field_verification", "Field Verification"
+        AWAITING_DECISION = "awaiting_decision", "Awaiting Decision"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    class ReadinessDecision(models.TextChoices):
+        PENDING = "pending", "Pending"
+        READY = "ready", "Ready"
+        CONDITIONALLY_READY = "conditionally_ready", "Conditionally Ready"
+        NOT_READY = "not_ready", "Not Ready"
+
+    class IsolationState(models.TextChoices):
+        UNKNOWN = "unknown", "Unknown"
+        ISOLATED = "isolated", "Isolated"
+        PARTIALLY_ISOLATED = "partially_isolated", "Partially Isolated"
+        RESTORED = "restored", "Restored"
+
+    case_code = models.CharField(
+        max_length=30,
+        unique=True,
+        help_text="Unique operational readiness case code, e.g. 'ORC-2026-001'.",
+    )
+    case_type = models.CharField(
+        max_length=30,
+        choices=CaseType.choices,
+        default=CaseType.TRACK_REOPENING,
+    )
+    train_number = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Train number/name for departure clearance cases, e.g. '12951 Rajdhani Express'.",
+    )
+    track_section = models.ForeignKey(
+        TrackSection,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="readiness_cases",
+        help_text="Track section being assessed. PROTECT preserves readiness history.",
+    )
+    asset = models.ForeignKey(
+        Asset,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="readiness_cases",
+        help_text="Optional asset scoped by this readiness case.",
+    )
+    ticket = models.ForeignKey(
+        Ticket,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="readiness_cases",
+        help_text="Maintenance ticket that triggered this readiness assessment, if any.",
+    )
+    alert = models.ForeignKey(
+        Alert,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="readiness_cases",
+        help_text="Related alert, if the case originated from an alert condition.",
+    )
+    assigned_team = models.ForeignKey(
+        MaintenanceTeam,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="readiness_cases",
+        help_text="Field team responsible for verification and sign-off.",
+    )
+    title = models.CharField(max_length=200)
+    description = models.TextField(
+        blank=True,
+        default="",
+    )
+    cleared_speed_kmph = models.PositiveIntegerField(
+        default=0,
+        help_text="Permitted speed after readiness clearance (e.g. 130 km/h, 30 km/h, 0 km/h).",
+    )
+    is_overridden = models.BooleanField(
+        default=False,
+        help_text="True if an operational override was recorded.",
+    )
+
+    workflow_status = models.CharField(
+        max_length=20,
+        choices=WorkflowStatus.choices,
+        default=WorkflowStatus.DRAFT,
+    )
+    readiness_decision = models.CharField(
+        max_length=20,
+        choices=ReadinessDecision.choices,
+        default=ReadinessDecision.PENDING,
+    )
+    isolation_state = models.CharField(
+        max_length=20,
+        choices=IsolationState.choices,
+        default=IsolationState.UNKNOWN,
+    )
+
+    isolated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the track/asset was isolated.",
+    )
+    isolated_by = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+    )
+    isolation_reference = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Reference number or authority for the isolation.",
+    )
+    restoration_target_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Target date/time for restoring operational state.",
+    )
+    restored_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+    restored_by = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+    )
+
+    sensor_window_start = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Start of the sensor observation window used for readiness metrics.",
+    )
+    sensor_window_end = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="End of the sensor observation window used for readiness metrics.",
+    )
+    sensor_metrics = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "Aggregated sensor metrics supporting the readiness decision. "
+            "Example: {'vibration_rms_avg': 2.1, 'temperature_max': 61.4}."
+        ),
+    )
+    readiness_score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("100"))],
+        help_text="Composite readiness score, 0.00 (not ready) to 100.00 (ready).",
+    )
+
+    decision_taken_by = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+    )
+    decision_taken_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+    decision_reference = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+    )
+    decision_conditions = models.TextField(
+        blank=True,
+        default="",
+        help_text="Conditions attached to a conditional readiness decision.",
+    )
+    decision_notes = models.TextField(
+        blank=True,
+        default="",
+    )
+    valid_until = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Expiry date of the readiness decision, if applicable.",
+    )
+
+    class Meta:
+        db_table = "rakshak_operational_readiness_case"
+        ordering = ["-created_at"]
+        verbose_name = "Operational Readiness Case"
+        verbose_name_plural = "Operational Readiness Cases"
+        indexes = [
+            models.Index(fields=["workflow_status"], name="idx_orc_status"),
+            models.Index(fields=["readiness_decision"], name="idx_orc_decision"),
+            models.Index(
+                fields=["track_section", "workflow_status"],
+                name="idx_orc_ts_status",
+            ),
+            models.Index(fields=["isolation_state"], name="idx_orc_isolation"),
+        ]
+
+    def __str__(self):
+        return self.case_code
+
+
+class ReadinessChecklistItem(TimeStampedModel):
+    """
+    Field checklist item and sign-off record for an operational
+    readiness case.
+
+    Each row stores one verification item, its result, optional GPS
+    evidence, and the field sign-off identity.
+    """
+
+    class Category(models.TextChoices):
+        TRACK = "track", "Track"
+        SIGNAL = "signal", "Signal"
+        OHE = "ohe", "OHE"
+        BRIDGE = "bridge", "Bridge"
+        CIVIL = "civil", "Civil"
+        SAFETY = "safety", "Safety"
+        DOCUMENTATION = "documentation", "Documentation"
+        OTHER = "other", "Other"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PASSED = "passed", "Passed"
+        FAILED = "failed", "Failed"
+        NOT_APPLICABLE = "not_applicable", "Not Applicable"
+        REQUIRES_ACTION = "requires_action", "Requires Action"
+
+    case = models.ForeignKey(
+        OperationalReadinessCase,
+        on_delete=models.CASCADE,
+        related_name="checklist_items",
+        help_text="Parent readiness case. Checklist items belong to one case.",
+    )
+    sequence = models.PositiveIntegerField(
+        help_text="Display/ordering sequence within the checklist.",
+    )
+    item_code = models.CharField(
+        max_length=30,
+        blank=True,
+        default="",
+        help_text="Optional stable checklist item code, e.g. 'TRK-CLEAR-01'.",
+    )
+    title = models.CharField(max_length=200)
+    description = models.TextField(
+        blank=True,
+        default="",
+    )
+    category = models.CharField(
+        max_length=15,
+        choices=Category.choices,
+        default=Category.OTHER,
+    )
+    is_required = models.BooleanField(
+        default=True,
+        help_text="False for informational or optional checklist entries.",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    weight = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("1.00"),
+        validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("100"))],
+        help_text="Weight used when calculating readiness score.",
+    )
+
+    signed_off_by = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+    )
+    signed_off_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+    sign_off_designation = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+    )
+    sign_off_comments = models.TextField(
+        blank=True,
+        default="",
+    )
+    signed_off_latitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("-90")), MaxValueValidator(Decimal("90"))],
+        help_text="GPS latitude where the sign-off was recorded.",
+    )
+    signed_off_longitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("-180")), MaxValueValidator(Decimal("180"))],
+        help_text="GPS longitude where the sign-off was recorded.",
+    )
+
+    evidence = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "Evidence metadata such as photos, documents, or measurements. "
+            "Example: {'photos': ['s3://bucket/a.jpg'], 'notes': 'torque checked'}."
+        ),
+    )
+    requires_followup = models.BooleanField(default=False)
+    followup_notes = models.TextField(
+        blank=True,
+        default="",
+    )
+
+    class Meta:
+        db_table = "rakshak_readiness_checklist_item"
+        ordering = ["case", "sequence"]
+        verbose_name = "Readiness Checklist Item"
+        verbose_name_plural = "Readiness Checklist Items"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["case", "sequence"],
+                name="uniq_rcl_case_seq",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["case", "status"],
+                name="idx_rcl_case_status",
+            ),
+            models.Index(fields=["signed_off_at"], name="idx_rcl_signed_at"),
+        ]
+
+    def __str__(self):
+        return f"{self.case_id}:{self.sequence} {self.title}"
+
+
+class ReadinessAuditRecord(TimeStampedModel):
+    """
+    Immutable decision/transition audit record for operational readiness.
+
+    Stores state changes, isolation-state changes, checklist sign-offs,
+    sensor metric snapshots, and final decision records.
+    """
+
+    class RecordType(models.TextChoices):
+        STATUS_CHANGE = "status_change", "Status Change"
+        ISOLATION_STATE = "isolation_state", "Isolation State"
+        CHECKLIST_SIGNOFF = "checklist_signoff", "Checklist Sign-off"
+        SENSOR_METRICS = "sensor_metrics", "Sensor Metrics"
+        DECISION = "decision", "Decision"
+        COMMENT = "comment", "Comment"
+        SYSTEM = "system", "System"
+
+    class ActorType(models.TextChoices):
+        USER = "user", "User"
+        SYSTEM = "system", "System"
+        ML_PIPELINE = "ml_pipeline", "ML Pipeline"
+        FIELD_TEAM = "field_team", "Field Team"
+        SENSOR = "sensor", "Sensor"
+
+    case = models.ForeignKey(
+        OperationalReadinessCase,
+        on_delete=models.PROTECT,
+        related_name="audit_records",
+        help_text="Readiness case being audited. PROTECT preserves decision records.",
+    )
+    checklist_item = models.ForeignKey(
+        ReadinessChecklistItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_records",
+        help_text="Checklist item associated with this record, if any.",
+    )
+    record_type = models.CharField(
+        max_length=20,
+        choices=RecordType.choices,
+    )
+    actor_type = models.CharField(
+        max_length=20,
+        choices=ActorType.choices,
+        default=ActorType.USER,
+    )
+    actor_identifier = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+    )
+    occurred_at = models.DateTimeField(
+        default=timezone.now,
+        db_index=True,
+        help_text="When the readiness event occurred.",
+    )
+
+    previous_state = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Snapshot of relevant case fields before the event.",
+    )
+    new_state = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Snapshot of relevant case fields after the event.",
+    )
+    sensor_metrics = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Sensor metric snapshot attached to this record, if applicable.",
+    )
+
+    decision = models.CharField(
+        max_length=20,
+        choices=OperationalReadinessCase.ReadinessDecision.choices,
+        null=True,
+        blank=True,
+        help_text="Decision value for decision-type records.",
+    )
+    decision_reference = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+    )
+    decision_summary = models.TextField(
+        blank=True,
+        default="",
+    )
+    notes = models.TextField(
+        blank=True,
+        default="",
+    )
+
+    class Meta:
+        db_table = "rakshak_readiness_audit_record"
+        ordering = ["-occurred_at"]
+        verbose_name = "Readiness Audit Record"
+        verbose_name_plural = "Readiness Audit Records"
+        indexes = [
+            models.Index(
+                fields=["case", "occurred_at"],
+                name="idx_rar_case_time",
+            ),
+            models.Index(fields=["record_type"], name="idx_rar_type"),
+            models.Index(fields=["decision"], name="idx_rar_decision"),
+        ]
+
+    def __str__(self):
+        return f"[{self.record_type}] case={self.case_id}"
+
+    def save(self, *args, **kwargs):
+        """Enforce append-only: prevent updates to existing rows."""
+        if self.pk is not None:
+            raise ValueError(
+                "ReadinessAuditRecord entries are immutable. "
+                "Updates are not permitted. Create a new entry instead."
+            )
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """Prevent deletion of readiness audit records."""
+        raise ValueError(
+            "ReadinessAuditRecord entries cannot be deleted. "
+            "This table is an append-only decision record."
+        )
+
+
+# ===================================================================
 # ML LAYER
 # ===================================================================
 

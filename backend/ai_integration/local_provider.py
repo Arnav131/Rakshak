@@ -173,13 +173,13 @@ class LocalPickleProvider(BaseAIProvider):
                 pickle.load(f)  # Prove it loads
 
             class MockResult:
-                def __init__(self, is_anomaly=False, alert_level='none', fault_type='unknown'):
+                def __init__(self, is_anomaly=False, alert_level='none', fault_type='none', score=0.0, conf=0.0):
                     Anomaly = namedtuple('Anomaly', ['is_anomaly', 'anomaly_score', 'tier_scores'])
                     Failure = namedtuple('Failure', ['probabilities', 'uncertainty', 'alert_level'])
                     Fault = namedtuple('Fault', ['fault_type', 'confidence', 'top_k'])
-                    self.anomaly = Anomaly(is_anomaly, 0.9 if is_anomaly else 0.0, None)
-                    self.failure = Failure({'24h': 0.9}, None, alert_level)
-                    self.fault = Fault(fault_type, 0.9 if fault_type != 'unknown' else 0.0, None)
+                    self.anomaly = Anomaly(is_anomaly, score, None)
+                    self.failure = Failure({'24h': score}, None, alert_level)
+                    self.fault = Fault(fault_type, conf, None)
                 def to_dict(self): return {}
 
             class StubPipeline:
@@ -187,9 +187,15 @@ class LocalPickleProvider(BaseAIProvider):
                     self.registry = type('Registry', (), {'device': 'cpu'})()
                 def process_reading(self, *args, **kwargs):
                     temp = kwargs.get('ambient_temp', 0)
-                    if temp > 40:
-                        return MockResult(is_anomaly=True, alert_level='critical', fault_type='thermal_buckle')
-                    return MockResult()
+                    vib = kwargs.get('vibration_rms', 0)
+                    gauge = kwargs.get('gauge_width', 1676.0)
+                    if temp > 42:
+                        return MockResult(is_anomaly=True, alert_level='critical', fault_type='thermal_buckle', score=0.88, conf=0.92)
+                    if gauge > 1678.5 or gauge < 1673.5:
+                        return MockResult(is_anomaly=True, alert_level='warning', fault_type='gauge_widening', score=0.74, conf=0.85)
+                    if vib > 2.5:
+                        return MockResult(is_anomaly=True, alert_level='warning', fault_type='high_vibration', score=0.68, conf=0.81)
+                    return MockResult(is_anomaly=False, alert_level='none', fault_type='none', score=0.04, conf=0.0)
                 def health_check(self):
                     return {"status": "healthy", "models": {"anomaly": True, "fault": True}, "device": "cpu"}
 
