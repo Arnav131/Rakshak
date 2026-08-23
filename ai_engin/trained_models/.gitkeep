@@ -1,0 +1,13 @@
+# This directory stores trained model artifacts (.pt, .joblib, .json)
+# produced by the Colab training pipeline.
+#
+# After training, copy the exported models here:
+#   - vae_anomaly_detector.pt
+#   - failure_predictor.pt
+#   - fault_classifier.pt
+#   - isolation_forest.joblib
+#   - meta_classifier.joblib
+#   - stat_detector.joblib
+#   - fault_label_encoder.joblib
+#   - *_scaler.joblib
+#   - model_config.json
