@@ -28,7 +28,7 @@ Tere paas teen alag cheezein hain jo **abhi connected nahi hain:**
 
 ---
 
-## PROBLEM 1 — "Backend aur Frontend connected nahi hai"
+## PROBLEM 1 — "Backend aur Frontend connected nahi haillalall"
 
 Yeh actually AI se koi lena dena nahi hai. Yeh pure Django ka issue hai.
 
