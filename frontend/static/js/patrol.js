@@ -5,6 +5,16 @@
 
 let activePatrolCode = null;
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -264,22 +274,22 @@ function renderPatrolTable(patrols) {
     }
 
     tbody.innerHTML = patrols.map(p => {
-        let statusBadge = `<span class="patrol-badge">${p.status_display}</span>`;
+        let statusBadge = `<span class="patrol-badge">${escapeHtml(p.status_display)}</span>`;
         if (p.status === 'decided') {
-            statusBadge = `<span class="patrol-badge patrol-badge-green">${p.admin_decision_display || 'Decided'}</span>`;
+            statusBadge = `<span class="patrol-badge patrol-badge-green">${escapeHtml(p.admin_decision_display || 'Decided')}</span>`;
         } else if (p.conflict_detected) {
             statusBadge = `<span class="patrol-badge patrol-badge-red">Conflict Alert</span>`;
         }
 
         return `
             <tr>
-                <td class="mono" style="font-weight:600;color:var(--gold-soft);">${p.patrol_code}</td>
-                <td>${p.section_name}</td>
+                <td class="mono" style="font-weight:600;color:var(--gold-soft);">${escapeHtml(p.patrol_code)}</td>
+                <td>${escapeHtml(p.section_name)}</td>
                 <td class="mono">${p.worker_overall_score !== null ? p.worker_overall_score.toFixed(1) : '--'}</td>
                 <td class="mono">${p.iot_overall_score !== null ? p.iot_overall_score.toFixed(1) : '--'}</td>
                 <td class="mono" style="font-weight:700;color:var(--emerald-soft);">${p.composite_score !== null ? p.composite_score.toFixed(1) : '--'}</td>
                 <td>${statusBadge}</td>
-                <td style="color:var(--text-secondary);font-size:0.8rem;">${p.created_at || '--'}</td>
+                <td style="color:var(--text-secondary);font-size:0.8rem;">${escapeHtml(p.created_at || '--')}</td>
             </tr>
         `;
     }).join('');

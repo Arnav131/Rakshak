@@ -20,21 +20,26 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 
 from ai_integration.prediction_service import PredictionService
+from ai_integration.severity import score_to_alert_level
+from ai_integration.alert_service import has_recent_duplicate_alert, DEDUP_WINDOW_MINUTES
 logger = logging.getLogger("rakshak.api.predict")
-
-# Counter for generating unique alert codes within this process
-_alert_counter = 0
 
 
 def _generate_alert_code():
-    """Generate a unique, collision-resistant alert code."""
-    global _alert_counter
-    _alert_counter += 1
+    """
+    Generate a unique, collision-resistant alert code.
+
+    Same format as AlertService._generate_alert_code (ALT-YYYYMMDD-XXXXXX)
+    so every alert in the system follows one recognizable pattern.
+    Uses a UUID suffix instead of an in-memory counter: counters restart at
+    0001 on every process restart / per-request instantiation and collide
+    with the Alert.alert_code unique constraint.
+    """
+    import uuid
+
     now = timezone.now()
-    # Add process ID for multi-worker safety
-    import os
-    pid = os.getpid() % 10000
-    return f"ALT-{now.strftime('%Y%m%d%H%M%S')}-{pid:04d}-{_alert_counter:04d}"
+    unique_suffix = uuid.uuid4().hex[:6].upper()
+    return f"ALT-{now.strftime('%Y%m%d')}-{unique_suffix}"
 
 
 def _validate_sensor_input(data):
@@ -88,15 +93,28 @@ def _maybe_create_alert(prediction, track_section_id=None, sensor_id=None):
     try:
         from railway.models import Alert
 
-        # Map pipeline alert levels to Alert severity
-        severity_map = {
+        # Dedup: suppress repeat alerts for the same section inside the
+        # shared dedup window (same rule as AlertService).
+        if has_recent_duplicate_alert(track_section_id, Alert.AlertType.ANOMALY):
+            logger.info(
+                f"Suppressing duplicate anomaly alert for section="
+                f"{track_section_id} within {DEDUP_WINDOW_MINUTES}min window"
+            )
+            return None
+
+        # Derive severity from the anomaly score using centralized
+        # thresholds (severity.py) so this path agrees with AlertService.
+        anomaly_score = prediction.get("anomaly_score", 0.0)
+        level = score_to_alert_level(float(anomaly_score))
+        severity = {
             "critical": "critical",
             "warning": "warning",
-        }
-        severity = severity_map.get(alert_level, "info")
+        }.get(level, "info")
+        if alert_level == "critical" and severity != "critical":
+            # Never downgrade an explicit model-critical call.
+            severity = "critical"
 
         alert_code = _generate_alert_code()
-        anomaly_score = prediction.get("anomaly_score", 0.0)
         fault_type = prediction.get("fault_type", "unknown")
         fault_confidence = prediction.get("fault_confidence", 0.0)
         explanation = prediction.get("metadata", {}).get("explanation", prediction.get("explanation", ""))

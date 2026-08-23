@@ -3,8 +3,7 @@ import os
 #Je;;p
 
 
-# add backend dir to path
-sys.path.append(r'c:\Users\devil\Downloads\PROTOTYPE_1.0\backend')
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'rakshak_project.settings')
 
 import django

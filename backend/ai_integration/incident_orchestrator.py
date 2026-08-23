@@ -51,13 +51,20 @@ class IncidentOrchestrator:
         if not response or not track_section_id:
             return result
 
-        # Create alert if anomaly detected
-        if auto_alert and response.is_anomaly:
+        # Create exactly one alert if anomaly detected or predictive risk elevated
+        if auto_alert and (response.is_anomaly or response.needs_alert):
             try:
-                alert_pk = self._alert_service.create_anomaly_alert(
-                    response=response,
-                    track_section_id=track_section_id,
-                )
+                alert_pk = None
+                if response.is_anomaly:
+                    alert_pk = self._alert_service.create_anomaly_alert(
+                        response=response,
+                        track_section_id=track_section_id,
+                    )
+                elif response.needs_alert:
+                    alert_pk = self._alert_service.create_predictive_alert(
+                        response=response,
+                        track_section_id=track_section_id,
+                    )
                 if alert_pk:
                     result["alert_created"] = True
                     result["alert_id"] = alert_pk
@@ -65,23 +72,13 @@ class IncidentOrchestrator:
                 logger.error(f"IncidentOrchestrator: Alert creation failed: {e}")
                 result["errors"].append(f"Alert creation failed: {e}")
 
-        # Also check for predictive alert
-        if auto_alert and response.needs_alert:
-            try:
-                self._alert_service.create_predictive_alert(
-                    response=response,
-                    track_section_id=track_section_id,
-                )
-            except Exception as e:
-                logger.error(f"IncidentOrchestrator: Predictive alert creation failed: {e}")
-                result["errors"].append(f"Predictive alert creation failed: {e}")
-
-        # Create ticket if critical/needs alert
-        if auto_ticket and response.needs_alert:
+        # Create ticket if critical/needs alert (linked to parent alert)
+        if auto_ticket and (response.needs_alert or response.alert_level in ["warning", "critical"]):
             try:
                 ticket_pk = self._ticket_service.create_ticket_from_prediction(
                     response=response,
                     track_section_id=track_section_id,
+                    alert_id=result.get("alert_id"),
                 )
                 if ticket_pk:
                     result["ticket_created"] = True

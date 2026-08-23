@@ -383,23 +383,33 @@ def _get_or_create_readiness_case(source, destination, readings, prediction, sen
         "simulated_sensor_id": sensor_id,
     }
 
-    case, created = OperationalReadinessCase.objects.update_or_create(
-        case_code=case_code,
-        defaults={
-            "case_type": OperationalReadinessCase.CaseType.ROUTE_DEPARTURE,
-            "train_number": f"{source} – {destination} Simulated Service",
-            "track_section": section,
-            "title": f"Departure Clearance: {source} → {destination}",
-            "description": (
+    existing_case = OperationalReadinessCase.objects.filter(case_code=case_code).first()
+    
+    if existing_case:
+        case = existing_case
+        case.sensor_metrics = sensor_metrics
+        # Only reset status if the case is still pending/unapproved
+        if case.readiness_decision == OperationalReadinessCase.ReadinessDecision.PENDING:
+            case.workflow_status = OperationalReadinessCase.WorkflowStatus.FIELD_VERIFICATION
+        case.save()
+        created = False
+    else:
+        case = OperationalReadinessCase.objects.create(
+            case_code=case_code,
+            case_type=OperationalReadinessCase.CaseType.ROUTE_DEPARTURE,
+            train_number=f"{source} – {destination} Simulated Service",
+            track_section=section,
+            title=f"Departure Clearance: {source} → {destination}",
+            description=(
                 f"Auto-generated pre-departure clearance for the {source} → {destination} "
                 f"route, populated from live simulated IoT telemetry (window {sensor_id})."
             ),
-            "workflow_status": OperationalReadinessCase.WorkflowStatus.FIELD_VERIFICATION,
-            "readiness_decision": OperationalReadinessCase.ReadinessDecision.PENDING,
-            "sensor_metrics": sensor_metrics,
-            "cleared_speed_kmph": 0,
-        },
-    )
+            workflow_status=OperationalReadinessCase.WorkflowStatus.FIELD_VERIFICATION,
+            readiness_decision=OperationalReadinessCase.ReadinessDecision.PENDING,
+            sensor_metrics=sensor_metrics,
+            cleared_speed_kmph=0,
+        )
+        created = True
 
     if created:
         from railway.models import ReadinessAuditRecord, ReadinessChecklistItem
@@ -415,35 +425,44 @@ def _get_or_create_readiness_case(source, destination, readings, prediction, sen
                 category=ReadinessChecklistItem.Category.SAFETY,
                 status=ReadinessChecklistItem.Status.PENDING, is_required=True,
             )
-        ReadinessAuditRecord.objects.create(
-            case=case,
-            record_type=ReadinessAuditRecord.RecordType.SENSOR_METRICS,
-            actor_type=ReadinessAuditRecord.ActorType.SYSTEM,
-            actor_identifier="Live Simulation Engine",
-            sensor_metrics=sensor_metrics,
-            notes=f"Case auto-created from simulated journey {sensor_id} ({source} → {destination}).",
-        )
+
+    from railway.models import ReadinessAuditRecord
+    ReadinessAuditRecord.objects.create(
+        case=case,
+        record_type=ReadinessAuditRecord.RecordType.SENSOR_METRICS,
+        actor_type=ReadinessAuditRecord.ActorType.SYSTEM,
+        actor_identifier="Live Simulation Engine",
+        sensor_metrics=sensor_metrics,
+        notes=f"Telemetry synced from simulated journey {sensor_id} ({source} → {destination}).",
+    )
 
     return case_code
 
 
 def _suggestions_for_score(score: float, fault_type: str):
-    """Hardcoded message sets keyed off prediction strength. Simple,
-    deterministic, and exactly what the judges want to see reacting live."""
-    if score >= 0.75:
+    """Suggestion sets keyed off prediction strength using the centralized
+    severity thresholds (ai_integration.severity) so the UI story matches
+    alert severities and ticket priorities for the same event."""
+    from ai_integration.severity import (
+        CRITICAL_THRESHOLD,
+        WARNING_THRESHOLD,
+        CAUTION_THRESHOLD,
+    )
+
+    if score >= CRITICAL_THRESHOLD:
         return [
             f"🔴 CRITICAL — {fault_type.replace('_', ' ').title()} risk detected.",
             "Immediate speed restriction recommended on this section.",
             "Dispatch maintenance crew for on-site inspection.",
             "Suggested action: divert incoming trains to alternate route.",
         ]
-    if score >= 0.45:
+    if score >= WARNING_THRESHOLD:
         return [
             f"🟠 WARNING — Elevated risk ({fault_type.replace('_', ' ').title()}).",
             "Recommend reduced speed limit until next inspection cycle.",
             "Flag this section for priority manual inspection within 24h.",
         ]
-    if score >= 0.20:
+    if score >= CAUTION_THRESHOLD:
         return [
             "🟡 WATCH — Minor deviation from baseline detected.",
             "No immediate action required — continue routine monitoring.",

@@ -239,7 +239,7 @@ def api_tickets(request):
     # Migration required: NO.
     tickets = (
         Ticket.objects
-        .exclude(status="closed")  # Don't show resolved/closed tickets
+        .exclude(status__in=["resolved", "closed"])  # Don't show resolved/closed tickets
         .select_related(
             "track_section__start_station__division__zone",  # For location
             "track_section__end_station",  # Eager load to prevent N+1
@@ -248,21 +248,18 @@ def api_tickets(request):
         .order_by("-created_at")[:200]  # Limit to 200 newest tickets for map performance
     )
 
-    # Seed random with fixed value for deterministic offsets
-    # This ensures tickets don't jump around on page reload
-    random.seed(99)
-
     data = []
     for t in tickets:
+        # Use local deterministic RNG based on ticket ID to avoid mutating global random state
+        jitter_rng = random.Random(t.id)
         # Get the start station of the affected track section
         sta = t.track_section.start_station
         div = sta.division
         zone = div.zone
 
-        # Apply small random offset so overlapping tickets are visually distinct
-        # Offset range: ±0.05 degrees (~5.5 km at equator)
-        lat = _decimal_to_float(sta.latitude) + random.uniform(-0.05, 0.05)
-        lng = _decimal_to_float(sta.longitude) + random.uniform(-0.05, 0.05)
+        # Apply small deterministic offset so overlapping tickets are visually distinct
+        lat = _decimal_to_float(sta.latitude) + jitter_rng.uniform(-0.05, 0.05)
+        lng = _decimal_to_float(sta.longitude) + jitter_rng.uniform(-0.05, 0.05)
 
         # Build the ticket data dictionary
         data.append({
@@ -400,39 +397,39 @@ def api_trains(request):
     if not sections:
         return JsonResponse([], safe=False)
 
-    # Pick ~20 random routes to simulate trains on
-    # Seed changes every 10 seconds for smooth animation
-    random.seed(int(time.time()) // 10)  # Integer division creates 10-second buckets
-    train_routes = random.sample(sections, k=min(20, len(sections)))
+    # Pick up to 20 stable routes to simulate continuous train journeys on
+    # Stable corridor assignments prevent trains from teleporting randomly across routes
+    train_routes = sections[:20] if len(sections) >= 20 else sections
 
     trains = []
+    t = time.time()
     for i, route in enumerate(train_routes):
-        coords = route["geometry"]
+        coords = route.get("geometry", [])
         # Skip routes with insufficient geometry data
         if not coords or len(coords) < 2:
             continue
 
-        # Calculate train position along the route based on current time
-        # Each train moves at a different speed for visual variety
-        t = time.time()  # Current Unix timestamp (seconds)
-        speed_factor = 0.0001 * (i + 1)  # Each train has unique speed
-        progress = (t * speed_factor) % 1.0  # Progress from 0.0 (start) to 1.0 (end)
+        # Calculate smooth train position along the route based on current time
+        # Cycle duration between 40s to 90s per route for visibly smooth gliding
+        cycle_seconds = 45.0 + (i * 3.7) % 45.0
+        phase = (i * 0.23) % 1.0  # Phase offset so trains start spaced out
+        progress = ((t / cycle_seconds) + phase) % 1.0
 
         # Interpolate position along the polyline geometry
-        # This creates smooth movement along multi-point routes
         total_segments = len(coords) - 1
         segment_idx = int(progress * total_segments)
         segment_idx = min(segment_idx, total_segments - 1)  # Clamp to valid range
         local_t = (progress * total_segments) - segment_idx  # Position within segment
 
         # Linear interpolation between two consecutive points
-        # Formula: point1 + t * (point2 - point1)
         lat = coords[segment_idx][0] + local_t * (
             coords[segment_idx + 1][0] - coords[segment_idx][0]
         )
         lng = coords[segment_idx][1] + local_t * (
             coords[segment_idx + 1][1] - coords[segment_idx][1]
         )
+
+        speed_kmph = 75 + int((i * 13) % 55)
 
         # Build the train data dictionary
         trains.append({
@@ -441,7 +438,7 @@ def api_trains(request):
             "lat": round(lat, 6),             # Current latitude
             "lng": round(lng, 6),             # Current longitude
             "progress": round(progress, 3),   # How far along the route (0.0-1.0)
-            "speed_kmph": random.randint(60, 160),  # Current speed in km/h
+            "speed_kmph": speed_kmph,         # Deterministic speed in km/h
         })
 
     return JsonResponse(trains, safe=False)

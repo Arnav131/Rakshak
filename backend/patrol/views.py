@@ -130,6 +130,10 @@ def api_start_patrol(request):
 @require_POST
 def api_submit_ratings(request, patrol_code):
     """POST /api/patrol/<code>/submit/ — Worker submits 8 category ratings."""
+    # Role guard: only patrol workers (or admins reviewing on their behalf)
+    if not (request.user.is_staff or _is_patrol_worker(request.user)):
+        return JsonResponse({"status": "error", "message": "Not authorized"}, status=403)
+
     try:
         data = json.loads(request.body)
     except Exception:
@@ -138,6 +142,25 @@ def api_submit_ratings(request, patrol_code):
     ratings = data.get("ratings", [])
     if len(ratings) < 1:
         return JsonResponse({"status": "error", "message": "At least one rating required"}, status=400)
+
+    try:
+        # Ownership + state guards before any side effects run.
+        patrol = WorkerPatrolReport.objects.get(patrol_code=patrol_code)
+    except WorkerPatrolReport.DoesNotExist:
+        return JsonResponse({"status": "error", "message": "Patrol not found"}, status=404)
+
+    if not request.user.is_staff and patrol.worker != request.user:
+        return JsonResponse({"status": "error", "message": "You can only submit ratings for your own patrols"}, status=403)
+
+    if patrol.status in (
+        WorkerPatrolReport.Status.SUBMITTED,
+        WorkerPatrolReport.Status.IOT_GENERATED,
+        WorkerPatrolReport.Status.DECIDED,
+    ):
+        return JsonResponse({
+            "status": "error",
+            "message": f"Patrol {patrol_code} has already been submitted and can no longer be edited",
+        }, status=409)
 
     try:
         # 1. Save worker ratings and calculate worker score

@@ -126,89 +126,32 @@ class LocalPickleProvider(BaseAIProvider):
 
         Returns:
             True if pipeline is ready, False if loading failed.
-
-        Side effects:
-            Sets self._pipeline on success.
-            Sets self._pipeline_error on failure.
-
-        IMPORTANT:
-            This is the ONLY place in the entire backend where we
-            import from ai_engin. This import is contained within
-            the provider — business logic never sees it.
-
-        FUTURE LLM INTEGRATION NOTE:
-            A future LLMProvider would NOT have this method. Instead,
-            it would initialize an HTTP client to the LLM API.
-            The point is: each provider manages its own resources.
         """
         if self._pipeline is not None:
             return True
 
         if self._pipeline_loaded:
-            # Already tried and failed — don't retry on every request.
-            # Call reset() to retry.
             return False
 
         self._pipeline_loaded = True
 
         try:
-            # =============================================================
-            # THIS IS THE ONLY ai_engin IMPORT IN THE ENTIRE BACKEND
-            #
-            # Everything else goes through the provider abstraction.
-            # If you need to change the AI engine, change ONLY this file.
-            # =============================================================
-            # fallback to local stub since ai_engin is missing in this prototype
-            import pickle
-            import os
-            from collections import namedtuple
-            
-            # Verify we can actually load the files
-            anomaly_path = os.path.join(self._model_dir, 'anomaly_model.pkl')
-            fault_path = os.path.join(self._model_dir, 'fault_model.pkl')
-            
-            with open(anomaly_path, 'rb') as f:
-                pickle.load(f)  # Prove it loads
-            with open(fault_path, 'rb') as f:
-                pickle.load(f)  # Prove it loads
+            if not os.path.exists(self._model_dir):
+                raise FileNotFoundError(f"Model directory not found: {self._model_dir}")
 
-            class MockResult:
-                def __init__(self, is_anomaly=False, alert_level='none', fault_type='none', score=0.0, conf=0.0):
-                    Anomaly = namedtuple('Anomaly', ['is_anomaly', 'anomaly_score', 'tier_scores'])
-                    Failure = namedtuple('Failure', ['probabilities', 'uncertainty', 'alert_level'])
-                    Fault = namedtuple('Fault', ['fault_type', 'confidence', 'top_k'])
-                    self.anomaly = Anomaly(is_anomaly, score, None)
-                    self.failure = Failure({'24h': score}, None, alert_level)
-                    self.fault = Fault(fault_type, conf, None)
-                def to_dict(self): return {}
+            from ai_models.simple_pipeline import SimpleRakshakInferencePipeline
 
-            class StubPipeline:
-                def __init__(self, *args, **kwargs):
-                    self.registry = type('Registry', (), {'device': 'cpu'})()
-                def process_reading(self, *args, **kwargs):
-                    temp = kwargs.get('ambient_temp', 0)
-                    vib = kwargs.get('vibration_rms', 0)
-                    gauge = kwargs.get('gauge_width', 1676.0)
-                    if temp > 42:
-                        return MockResult(is_anomaly=True, alert_level='critical', fault_type='thermal_buckle', score=0.88, conf=0.92)
-                    if gauge > 1678.5 or gauge < 1673.5:
-                        return MockResult(is_anomaly=True, alert_level='warning', fault_type='gauge_widening', score=0.74, conf=0.85)
-                    if vib > 2.5:
-                        return MockResult(is_anomaly=True, alert_level='warning', fault_type='high_vibration', score=0.68, conf=0.81)
-                    return MockResult(is_anomaly=False, alert_level='none', fault_type='none', score=0.04, conf=0.0)
-                def health_check(self):
-                    return {"status": "healthy", "models": {"anomaly": True, "fault": True}, "device": "cpu"}
-
-            self._pipeline = StubPipeline(
+            self._pipeline = SimpleRakshakInferencePipeline(
                 model_dir=self._model_dir,
-                window_size=self._window_size,
-                alert_threshold=self._alert_threshold,
-                critical_threshold=self._critical_threshold,
             )
 
+            if not self._pipeline.models_loaded:
+                self._pipeline_error = f"Model directory {self._model_dir} contains no trained models."
+                logger.warning(f"LocalPickleProvider: {self._pipeline_error}")
+                return False
+
             logger.info(
-                f"LocalPickleProvider: AI Engine pipeline loaded successfully "
-                f"(device={self._pipeline.registry.device})"
+                f"LocalPickleProvider: AI Engine pipeline loaded successfully from {self._model_dir}"
             )
             return True
 
@@ -228,18 +171,6 @@ class LocalPickleProvider(BaseAIProvider):
     def predict(self, request: PredictionRequest) -> PredictionResponse:
         """
         Run prediction using the local AI Engine pipeline.
-
-        Translates:
-            PredictionRequest → pipeline.process_reading() → PredictionResponse
-
-        If the pipeline is not loaded or prediction fails, returns a
-        safe default PredictionResponse (is_anomaly=False, score=0.0).
-
-        Args:
-            request: Standardized prediction input.
-
-        Returns:
-            PredictionResponse — always. Never raises.
         """
         t0 = time.time()
 
@@ -250,33 +181,19 @@ class LocalPickleProvider(BaseAIProvider):
                 anomaly_score=0.0,
                 provider_name=self.get_provider_name(),
                 processing_time_ms=(time.time() - t0) * 1000,
-                metadata={"error": self._pipeline_error or "Pipeline not loaded"},
+                metadata={"error": self._pipeline_error or "Pipeline not loaded", "status": "degraded"},
             )
 
         # --- Run prediction through the AI Engine ---
         try:
-            result = self._pipeline.process_reading(
+            result = self._pipeline.predict(
                 ambient_temp=request.ambient_temp,
                 humidity=request.humidity,
                 vibration_rms=request.vibration_rms,
                 gauge_width=request.gauge_width,
-                timestamp=request.timestamp,
-                sensor_id=request.sensor_id,
             )
 
             elapsed_ms = (time.time() - t0) * 1000
-
-            # --- Pipeline returns None while buffer is filling ---
-            if result is None:
-                return PredictionResponse(
-                    is_anomaly=False,
-                    anomaly_score=0.0,
-                    provider_name=self.get_provider_name(),
-                    processing_time_ms=elapsed_ms,
-                    metadata={"status": "buffering", "sensor_id": request.sensor_id},
-                )
-
-            # --- Translate PredictionResult → PredictionResponse ---
             return self._translate_result(result, elapsed_ms)
 
         except Exception as e:
@@ -291,86 +208,43 @@ class LocalPickleProvider(BaseAIProvider):
                 anomaly_score=0.0,
                 provider_name=self.get_provider_name(),
                 processing_time_ms=elapsed_ms,
-                metadata={"error": str(e)},
+                metadata={"error": str(e), "status": "degraded"},
             )
 
-    def _translate_result(self, result, elapsed_ms: float) -> PredictionResponse:
+    def _translate_result(self, result: Dict[str, Any], elapsed_ms: float) -> PredictionResponse:
         """
-        Translate the ai_engin PredictionResult into our PredictionResponse.
-
-        This is the translation boundary between the AI Engine's internal
-        data structures and our provider-agnostic contract.
-
-        The ai_engin PredictionResult has:
-            result.anomaly    → AnomalyResult(is_anomaly, anomaly_score, tier_scores)
-            result.failure    → FailurePrediction(probabilities, uncertainty, alert_level)
-            result.fault      → FaultClassification(fault_type, confidence, top_k)
-
-        We flatten this into our single PredictionResponse.
-
-        FUTURE NOTE:
-            If the AI Engine changes its PredictionResult shape, ONLY
-            this method needs to change. Business logic is unaffected.
+        Translate the SimpleRakshakInferencePipeline dict into PredictionResponse.
         """
-        # --- Extract anomaly data ---
-        is_anomaly = result.anomaly.is_anomaly
-        anomaly_score = float(result.anomaly.anomaly_score)
+        is_anomaly = bool(result.get("is_anomaly", False))
+        anomaly_score = float(result.get("anomaly_score", 0.0))
+        alert_level = result.get("alert_level", "none")
+        fault_type = result.get("fault_type", "none")
+        fault_confidence = float(result.get("fault_confidence", 0.0))
 
-        # --- Extract failure prediction data ---
-        failure_probs = {}
-        if result.failure and result.failure.probabilities:
-            failure_probs = {
-                k: float(v) for k, v in result.failure.probabilities.items()
-            }
-
-        alert_level = "none"
-        if result.failure:
-            alert_level = result.failure.alert_level or "none"
-
-        # --- Extract fault classification data ---
-        fault_type = "unknown"
-        fault_confidence = 0.0
-        if result.fault:
-            fault_type = result.fault.fault_type or "unknown"
-            fault_confidence = float(result.fault.confidence)
-
-        # --- Build metadata with detailed diagnostics ---
-        metadata = {}
-        if result.anomaly.tier_scores:
-            metadata["tier_scores"] = {
-                k: round(float(v), 4)
-                for k, v in result.anomaly.tier_scores.items()
-            }
-        if result.failure and result.failure.uncertainty:
-            metadata["uncertainty"] = {
-                k: round(float(v), 4)
-                for k, v in result.failure.uncertainty.items()
-            }
-        if result.fault and result.fault.top_k:
-            metadata["fault_top_k"] = result.fault.top_k
+        metadata = {
+            "explanation": result.get("explanation", ""),
+            "model_used": result.get("model_used", "rules_only"),
+            "rule_triggers": result.get("rule_triggers", []),
+            "top_features": result.get("top_features", {}),
+            "fault_top_k": result.get("fault_top_k", {}),
+        }
 
         return PredictionResponse(
             is_anomaly=is_anomaly,
             anomaly_score=anomaly_score,
-            failure_probabilities=failure_probs,
+            failure_probabilities={"24h": anomaly_score},
             fault_type=fault_type,
             fault_confidence=fault_confidence,
             alert_level=alert_level,
             processing_time_ms=elapsed_ms,
             provider_name=self.get_provider_name(),
-            raw_result=result.to_dict() if hasattr(result, "to_dict") else None,
+            raw_result=result,
             metadata=metadata,
         )
 
     def health_check(self) -> Dict[str, Any]:
         """
         Check if the local AI pipeline is ready.
-
-        Returns diagnostics including:
-            - Whether models are loaded
-            - Which models are available
-            - Device (CPU/GPU)
-            - Any pipeline errors
         """
         base = {
             "status": "unhealthy",
@@ -390,11 +264,14 @@ class LocalPickleProvider(BaseAIProvider):
         try:
             pipeline_health = self._pipeline.health_check()
             base.update({
-                "status": pipeline_health.get("status", "unknown"),
-                "models": pipeline_health.get("models", {}),
-                "device": pipeline_health.get("device", "unknown"),
-                "window_size": pipeline_health.get("window_size", self._window_size),
-                "active_buffers": pipeline_health.get("active_buffers", 0),
+                "status": "healthy" if pipeline_health.get("status") == "ok" else "degraded",
+                "models": {
+                    "anomaly": pipeline_health.get("risk_model_loaded", False),
+                    "fault": pipeline_health.get("fault_model_loaded", False),
+                },
+                "device": "cpu",
+                "mode": pipeline_health.get("mode", "unknown"),
+                "model_version": pipeline_health.get("model_version", "unknown"),
             })
         except Exception as e:
             base["status"] = "degraded"

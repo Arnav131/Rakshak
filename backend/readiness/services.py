@@ -264,11 +264,24 @@ def get_case_payload(case: OperationalReadinessCase) -> dict:
 
     section_name = "N/A"
     track_code = "N/A"
+    latest_patrol = None
     if case.track_section:
         track_code = case.track_section.section_code
         start = case.track_section.start_station.station_name if case.track_section.start_station else "?"
         end = case.track_section.end_station.station_name if case.track_section.end_station else "?"
         section_name = f"{start} — {end}"
+        try:
+            from patrol.models import WorkerPatrolReport
+            from patrol.services import get_patrol_payload
+            patrol_obj = WorkerPatrolReport.objects.filter(
+                track_section=case.track_section
+            ).select_related(
+                "worker", "track_section__start_station", "track_section__end_station"
+            ).prefetch_related("category_ratings").order_by("-created_at").first()
+            if patrol_obj:
+                latest_patrol = get_patrol_payload(patrol_obj)
+        except Exception:
+            latest_patrol = None
 
     return {
         "id": case.pk,
@@ -293,4 +306,5 @@ def get_case_payload(case: OperationalReadinessCase) -> dict:
         "telemetry": eval_result,
         "checklist": checklist_data,
         "audit_trail": audit_data,
+        "latest_patrol": latest_patrol,
     }

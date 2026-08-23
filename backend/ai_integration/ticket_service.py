@@ -51,8 +51,13 @@ from django.db import transaction
 from django.utils import timezone
 
 from ai_integration.providers import PredictionResponse
+from ai_integration.severity import score_to_ticket_priority
 
 logger = logging.getLogger("rakshak.ai_integration.ticket_service")
+
+# Minimum delay before a duplicate ticket may be opened again for the
+# same section + fault type. Mirrors AlertService.DEDUP_WINDOW_MINUTES.
+DEDUP_WINDOW_MINUTES = 30
 
 
 # Fault type → estimated repair cost (INR)
@@ -112,25 +117,17 @@ class TicketService:
     """
 
     def __init__(self):
-        self._ticket_counter = 0
+        pass
 
     def _generate_ticket_code(self) -> str:
         """
-        Generate a unique ticket code.
-
-        Format: TKT-YYYYMMDD-NNNN
-
-        # ---------------------------------------------------------------
-        # DATABASE MIGRATION NOTE
-        #
-        # ticket_code is CharField(unique=True) in Ticket model.
-        # Works natively in PostgreSQL.
-        # Teammate action: NONE
-        # ---------------------------------------------------------------
+        Generate a globally unique, collision-resistant ticket code (<= 20 chars).
+        Format: TKT-YYYYMMDD-XXXXXX (e.g. TKT-20260823-A1B2C3) -> 19 chars.
         """
-        self._ticket_counter += 1
+        import uuid
         now = timezone.now()
-        return f"TKT-{now.strftime('%Y%m%d')}-{self._ticket_counter:04d}"
+        unique_suffix = uuid.uuid4().hex[:6].upper()
+        return f"TKT-{now.strftime('%Y%m%d')}-{unique_suffix}"
 
     def create_ticket_from_prediction(
         self,
@@ -175,13 +172,34 @@ class TicketService:
         if fault_type == "unknown":
             fault_type = "unclassified"
 
-        # Determine priority from alert level
-        priority_map = {
-            "critical": Ticket.Priority.CRITICAL,
-            "warning": Ticket.Priority.HIGH,
-            "none": Ticket.Priority.MEDIUM,
-        }
-        priority = priority_map.get(response.alert_level, Ticket.Priority.MEDIUM)
+        # Dedup: don't open a second open/assigned ticket for the same
+        # section + fault type while one is already being worked on.
+        from datetime import timedelta
+
+        since = timezone.now() - timedelta(minutes=DEDUP_WINDOW_MINUTES)
+        duplicate = Ticket.objects.filter(
+            track_section_id=track_section_id,
+            created_at__gte=since,
+        ).exclude(status__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED])
+        if fault_type != "unclassified":
+            duplicate = duplicate.filter(title__icontains=fault_type.replace("_", " "))
+        if duplicate.exists():
+            logger.info(
+                f"TicketService: Suppressing duplicate ticket for "
+                f"section={track_section_id} fault={fault_type} within "
+                f"{DEDUP_WINDOW_MINUTES}min window"
+            )
+            return None
+
+        # Determine priority from score + alert level via centralized
+        # thresholds (severity.py) so alert severity and ticket priority
+        # always tell the same story for one event.
+        priority = getattr(
+            Ticket.Priority, score_to_ticket_priority(
+                response.anomaly_score, response.alert_level
+            ).upper(),
+            Ticket.Priority.MEDIUM,
+        )
 
         # Estimate cost and duration
         cost_estimate = COST_ESTIMATES.get(fault_type, 100000)

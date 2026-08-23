@@ -160,7 +160,10 @@ class PredictionService:
                 is_anomaly=False,
                 anomaly_score=0.0,
                 provider_name="none",
-                metadata={"error": "No AI provider available"},
+                metadata={
+                    "error": "No AI provider available",
+                    "status": "degraded",
+                },
             )
 
         request = PredictionRequest(
@@ -198,7 +201,10 @@ class PredictionService:
                 is_anomaly=False,
                 anomaly_score=0.0,
                 provider_name=provider.get_provider_name(),
-                metadata={"error": f"Unexpected provider error: {e}"},
+                metadata={
+                    "error": f"Unexpected provider error: {e}",
+                    "status": "degraded",
+                },
             )
 
     def predict_from_dict(
@@ -254,7 +260,10 @@ class PredictionService:
                     is_anomaly=False,
                     anomaly_score=0.0,
                     provider_name="none",
-                    metadata={"error": "No AI provider available"},
+                    metadata={
+                        "error": "No AI provider available",
+                        "status": "degraded",
+                    },
                 )
                 for _ in readings
             ]
@@ -285,7 +294,7 @@ class PredictionService:
                     is_anomaly=False,
                     anomaly_score=0.0,
                     provider_name=provider.get_provider_name(),
-                    metadata={"error": str(e)},
+                    metadata={"error": str(e), "status": "degraded"},
                 )
                 for _ in requests
             ]
@@ -299,6 +308,10 @@ class PredictionService:
             Dict with overall status and per-provider health.
         """
         return ai_provider_registry.health_check()
+
+    def health_check(self) -> Dict[str, Any]:
+        """Instance method alias for get_health()."""
+        return self.get_health()
 
     def get_provider_metadata(self) -> Dict[str, Any]:
         """

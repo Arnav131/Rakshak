@@ -207,10 +207,9 @@ class SimpleRakshakInferencePipeline:
             try:
                 with open(risk_path, "rb") as f:
                     self.risk_artifact = pickle.load(f)
-                self.risk_model = self._build_model(
-                    self.risk_artifact["input_size"],
-                    self.risk_artifact["num_classes"],
-                )
+                in_channels = self.risk_artifact.get("in_channels", 4)
+                num_classes = self.risk_artifact.get("num_classes", 3)
+                self.risk_model = self._build_model(in_channels, num_classes)
                 self.risk_model.load_state_dict(self.risk_artifact["model_state_dict"])
                 self.risk_model.eval()
                 logger.info("Risk model loaded successfully")
@@ -226,10 +225,9 @@ class SimpleRakshakInferencePipeline:
             try:
                 with open(fault_path, "rb") as f:
                     self.fault_artifact = pickle.load(f)
-                self.fault_model = self._build_model(
-                    self.fault_artifact["input_size"],
-                    self.fault_artifact["num_classes"],
-                )
+                in_channels = self.fault_artifact.get("in_channels", 4)
+                num_classes = self.fault_artifact.get("num_classes", len(self.fault_artifact.get("class_names", [])))
+                self.fault_model = self._build_model(in_channels, num_classes)
                 self.fault_model.load_state_dict(self.fault_artifact["model_state_dict"])
                 self.fault_model.eval()
                 logger.info("Fault model loaded successfully")
@@ -241,29 +239,34 @@ class SimpleRakshakInferencePipeline:
         
         self.models_loaded = (self.risk_model is not None)
     
-    def _build_model(self, input_size: int, num_classes: int):
-        """Build the MLP architecture (must match training code)."""
+    def _build_model(self, in_channels: int, num_classes: int):
+        """Build the CNN1D architecture (matches trained weights)."""
         nn = self._nn
         
-        class MLP(nn.Module):
+        class CNN1D(nn.Module):
             def __init__(self):
                 super().__init__()
-                self.network = nn.Sequential(
-                    nn.Linear(input_size, 64),
-                    nn.BatchNorm1d(64),
+                self.conv = nn.Sequential(
+                    nn.Conv1d(in_channels, 16, kernel_size=3, padding=1),
+                    nn.BatchNorm1d(16),
                     nn.ReLU(),
-                    nn.Dropout(0.3),
-                    nn.Linear(64, 32),
+                    nn.Conv1d(16, 32, kernel_size=3, padding=1),
                     nn.BatchNorm1d(32),
+                    nn.ReLU(),
+                )
+                self.pool = nn.AdaptiveAvgPool1d(1)
+                self.head = nn.Sequential(
+                    nn.Flatten(),
+                    nn.Linear(32, 32),
                     nn.ReLU(),
                     nn.Dropout(0.2),
                     nn.Linear(32, num_classes),
                 )
             
             def forward(self, x):
-                return self.network(x)
+                return self.head(self.pool(self.conv(x)))
         
-        return MLP()
+        return CNN1D()
     
     def _build_features(
         self,
@@ -276,24 +279,28 @@ class SimpleRakshakInferencePipeline:
         gauge_dev = abs(gauge_width - STANDARD_GAUGE_MM)
         
         return {
-            "ambient_temp_mean": ambient_temp,
-            "ambient_temp_max": ambient_temp,
-            "ambient_temp_min": ambient_temp,
+            "ambient_temp": float(ambient_temp),
+            "humidity": float(humidity),
+            "vibration_rms": float(vibration_rms),
+            "gauge_width": float(gauge_width),
+            "ambient_temp_mean": float(ambient_temp),
+            "ambient_temp_max": float(ambient_temp),
+            "ambient_temp_min": float(ambient_temp),
             "ambient_temp_std": 0.0,
-            "humidity_mean": humidity,
-            "humidity_max": humidity,
-            "humidity_min": humidity,
+            "humidity_mean": float(humidity),
+            "humidity_max": float(humidity),
+            "humidity_min": float(humidity),
             "humidity_std": 0.0,
-            "vibration_rms_mean": vibration_rms,
-            "vibration_rms_max": vibration_rms,
-            "vibration_rms_min": vibration_rms,
+            "vibration_rms_mean": float(vibration_rms),
+            "vibration_rms_max": float(vibration_rms),
+            "vibration_rms_min": float(vibration_rms),
             "vibration_rms_std": 0.0,
-            "gauge_width_mean": gauge_width,
-            "gauge_width_max": gauge_width,
-            "gauge_width_min": gauge_width,
+            "gauge_width_mean": float(gauge_width),
+            "gauge_width_max": float(gauge_width),
+            "gauge_width_min": float(gauge_width),
             "gauge_width_std": 0.0,
-            "gauge_deviation_mean": gauge_dev,
-            "gauge_deviation_max": gauge_dev,
+            "gauge_deviation_mean": float(gauge_dev),
+            "gauge_deviation_max": float(gauge_dev),
             "temperature_risk_flag": 1.0 if ambient_temp > 48.0 else 0.0,
             "vibration_risk_flag": 1.0 if vibration_rms > 5.0 else 0.0,
             "gauge_risk_flag": 1.0 if gauge_dev > 10.0 else 0.0,
@@ -301,29 +308,36 @@ class SimpleRakshakInferencePipeline:
         }
     
     def _model_predict(self, model, artifact, features: dict) -> dict:
-        """Run model inference on features."""
+        """Run CNN1D model inference on features."""
         torch = self._torch
-        feature_cols = artifact["feature_columns"]
+        feature_order = artifact.get("feature_order", ["ambient_temp", "humidity", "vibration_rms", "gauge_width"])
+        window_size = artifact.get("window_size", 16)
         
-        x = np.array([features.get(col, 0.0) for col in feature_cols], dtype=np.float32)
+        raw_vals = np.array([features.get(col, 0.0) for col in feature_order], dtype=np.float32)
         
-        mean = np.array(artifact["scaler_mean"], dtype=np.float32)
-        scale = np.array(artifact["scaler_scale"], dtype=np.float32)
-        x_scaled = (x - mean) / scale
+        channel_mean = np.array(artifact.get("channel_mean", [30.0, 50.0, 1.5, 1676.0]), dtype=np.float32)
+        channel_std = np.array(artifact.get("channel_std", [10.0, 20.0, 2.0, 5.0]), dtype=np.float32)
+        channel_std = np.where(channel_std == 0, 1.0, channel_std)
         
-        x_tensor = torch.tensor(x_scaled).unsqueeze(0)
+        norm_vals = (raw_vals - channel_mean) / channel_std
+        # Shape: (1, in_channels, window_size)
+        seq_tensor = np.tile(norm_vals[:, np.newaxis], (1, window_size))
+        x_tensor = torch.tensor(seq_tensor, dtype=torch.float32).unsqueeze(0)
         
         with torch.no_grad():
             output = model(x_tensor)
-            probs = torch.softmax(output, dim=1).numpy()[0]
+            probs = torch.softmax(output, dim=-1).numpy()[0]
             pred_class = int(np.argmax(probs))
+        
+        class_names = artifact.get("class_names", [str(i) for i in range(len(probs))])
+        label = class_names[pred_class] if pred_class < len(class_names) else "unknown"
         
         return {
             "predicted_class": pred_class,
-            "predicted_label": artifact["class_names"][pred_class],
+            "predicted_label": label,
             "confidence": float(probs[pred_class]),
             "probabilities": {
-                name: float(probs[i]) for i, name in enumerate(artifact["class_names"])
+                name: float(probs[i]) for i, name in enumerate(class_names) if i < len(probs)
             },
         }
     

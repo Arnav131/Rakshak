@@ -25,6 +25,7 @@ import math
 import os
 import random
 import re
+from typing import Any
 
 import requests
 
@@ -209,12 +210,21 @@ def _generate_grok(source: str, destination: str, api_key: str, model: str = Non
 # ---------------------------------------------------------------------------
 # Google Gemini API backend
 # ---------------------------------------------------------------------------
+def _sanitize_log_msg(msg: Any) -> str:
+    import re
+    s = str(msg)
+    s = re.sub(r'AIza[0-9A-Za-z-_]{35}', '[REDACTED_API_KEY]', s)
+    s = re.sub(r'key=[0-9A-Za-z-_]{20,}', 'key=[REDACTED]', s)
+    return s
+
+
 def _generate_gemini(source: str, destination: str, api_key: str, model: str = None):
     flavour_name, flavour_desc = _pick_nominal_scenario(source, destination)
     prompt = _build_llm_prompt(source, destination, flavour_desc)
 
     model_name = model or os.environ.get("GEMINI_MODEL") or "gemini-1.5-flash"
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+    headers = {"x-goog-api-key": api_key}
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
@@ -223,9 +233,9 @@ def _generate_gemini(source: str, destination: str, api_key: str, model: str = N
         },
     }
 
-    resp = requests.post(url, json=payload, timeout=20)
+    resp = requests.post(url, headers=headers, json=payload, timeout=20)
     if resp.status_code != 200:
-        logger.warning(f"[simulation] Gemini API returned HTTP {resp.status_code}: {resp.text}")
+        logger.warning(f"[simulation] Gemini API returned HTTP {resp.status_code}: {resp.text[:200]}")
     resp.raise_for_status()
     data = resp.json()
 
@@ -388,28 +398,28 @@ def generate_journey(source: str, destination: str, patrol_mode: bool = False, c
             readings, flavour_name, flavour_desc = _generate_gemini(source, destination, gemini_key)
             return readings, flavour_name, flavour_desc, "gemini"
         except Exception as e:
-            logger.warning(f"[simulation] Gemini generation failed, falling back: {e}")
+            logger.warning(f"[simulation] Gemini generation failed, falling back: {_sanitize_log_msg(e)}")
 
     if grok_key:
         try:
             readings, flavour_name, flavour_desc = _generate_grok(source, destination, grok_key)
             return readings, flavour_name, flavour_desc, "grok"
         except Exception as e:
-            logger.warning(f"[simulation] Grok generation failed, falling back: {e}")
+            logger.warning(f"[simulation] Grok generation failed, falling back: {_sanitize_log_msg(e)}")
 
     if anthropic_key:
         try:
             readings, flavour_name, flavour_desc = _generate_anthropic(source, destination, anthropic_key)
             return readings, flavour_name, flavour_desc, "anthropic"
         except Exception as e:
-            logger.warning(f"[simulation] Anthropic generation failed, falling back: {e}")
+            logger.warning(f"[simulation] Anthropic generation failed, falling back: {_sanitize_log_msg(e)}")
 
     if openai_key:
         try:
             readings, flavour_name, flavour_desc = _generate_openai_compatible(source, destination, openai_key)
             return readings, flavour_name, flavour_desc, "openai_compatible"
         except Exception as e:
-            logger.warning(f"[simulation] OpenAI-compatible generation failed, falling back: {e}")
+            logger.warning(f"[simulation] OpenAI-compatible generation failed, falling back: {_sanitize_log_msg(e)}")
 
     # Attempt local Ollama
     if os.environ.get("OPENAI_API_BASE") and "localhost" in os.environ.get("OPENAI_API_BASE", ""):
@@ -417,7 +427,7 @@ def generate_journey(source: str, destination: str, patrol_mode: bool = False, c
             readings, flavour_name, flavour_desc = _generate_openai_compatible(source, destination, "ollama")
             return readings, flavour_name, flavour_desc, "ollama"
         except Exception as e:
-            logger.warning(f"[simulation] Ollama local LLM generation failed, falling back: {e}")
+            logger.warning(f"[simulation] Ollama local LLM generation failed, falling back: {_sanitize_log_msg(e)}")
 
     # High-fidelity physics-based IoT RNG generator (always available offline)
     readings, flavour_name, flavour_desc = _generate_physics_iot_rng(source, destination)

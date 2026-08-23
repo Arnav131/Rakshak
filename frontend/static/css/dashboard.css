@@ -69,7 +69,7 @@ a:hover { color: var(--gold); }
   filter: blur(20px);
 }
 .app-sidebar,
-.app-content-wrapper { position: relative; z-index: 1; }
+.app-content-wrapper { position: relative; z-index: 1; min-width: 0; }
 
 /* ---------- Sidebar ---------- */
 .app-sidebar {

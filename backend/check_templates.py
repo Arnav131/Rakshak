@@ -3,8 +3,7 @@ import sys
 import django
 from django.template import Engine
 
-# Add the backend dir to sys.path so we can import the settings
-sys.path.append(r"d:\github\Rakshak\backend")
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'rakshak_project.settings')
 django.setup()
 

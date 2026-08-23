@@ -9,6 +9,16 @@ let currentPatrol = null;
 let chartInstances = {};
 let selectedDecision = null;
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -160,26 +170,27 @@ function renderPatrolsTable() {
     }
 
     tbody.innerHTML = filtered.map(p => {
-        let statusBadge = `<span class="patrol-badge">${p.status_display}</span>`;
+        let statusBadge = `<span class="patrol-badge">${escapeHtml(p.status_display)}</span>`;
         if (p.status === 'decided') {
-            statusBadge = `<span class="patrol-badge patrol-badge-green">${p.admin_decision_display || 'Decided'}</span>`;
+            statusBadge = `<span class="patrol-badge patrol-badge-green">${escapeHtml(p.admin_decision_display || 'Decided')}</span>`;
         } else if (p.conflict_detected) {
             statusBadge = `<span class="patrol-badge patrol-badge-red">Conflict Alert</span>`;
         }
 
         const isSelected = p.patrol_code === selectedPatrolCode;
         const rowStyle = isSelected ? 'background:rgba(201, 162, 74, 0.12);' : '';
+        const safeCode = escapeHtml(p.patrol_code);
 
         return `
-            <tr class="clickable-row" onclick="openPatrolDetail('${p.patrol_code}')" style="${rowStyle}">
-                <td class="mono" style="font-weight:700;color:var(--gold-soft);">${p.patrol_code}</td>
-                <td><span style="font-weight:500;">${p.worker_name || p.worker}</span></td>
-                <td>${p.section_name}</td>
+            <tr class="clickable-row" onclick="openPatrolDetail('${safeCode}')" style="${rowStyle}">
+                <td class="mono" style="font-weight:700;color:var(--gold-soft);">${safeCode}</td>
+                <td><span style="font-weight:500;">${escapeHtml(p.worker_name || p.worker)}</span></td>
+                <td>${escapeHtml(p.section_name)}</td>
                 <td class="mono">${p.worker_overall_score !== null ? p.worker_overall_score.toFixed(1) : '--'}</td>
                 <td class="mono">${p.iot_overall_score !== null ? p.iot_overall_score.toFixed(1) : '--'}</td>
                 <td class="mono" style="font-weight:700;color:var(--emerald-soft);">${p.composite_score !== null ? p.composite_score.toFixed(1) : '--'}</td>
                 <td>${statusBadge}</td>
-                <td style="color:var(--text-secondary);font-size:0.8rem;">${p.created_at || '--'}</td>
+                <td style="color:var(--text-secondary);font-size:0.8rem;">${escapeHtml(p.created_at || '--')}</td>
             </tr>
         `;
     }).join('');
@@ -257,9 +268,9 @@ function renderDetailView(patrol) {
         if (patrol.status === 'decided') {
             decisionStateEl.innerHTML = `
                 <div class="patrol-badge patrol-badge-green" style="font-size:0.9rem;padding:0.4rem 0.8rem;">
-                    Decided: ${patrol.admin_decision_display} by ${patrol.admin_decision_by}
+                    Decided: ${escapeHtml(patrol.admin_decision_display)} by ${escapeHtml(patrol.admin_decision_by)}
                 </div>
-                ${patrol.admin_notes ? `<div style="font-size:0.825rem;color:var(--text-secondary);margin-top:0.4rem;"><strong>Notes:</strong> ${patrol.admin_notes}</div>` : ''}
+                ${patrol.admin_notes ? `<div style="font-size:0.825rem;color:var(--text-secondary);margin-top:0.4rem;"><strong>Notes:</strong> ${escapeHtml(patrol.admin_notes)}</div>` : ''}
             `;
         } else {
             decisionStateEl.innerHTML = `<span class="patrol-badge patrol-badge-amber">Decision Pending</span>`;
@@ -290,13 +301,13 @@ function renderWorkerCategoryBars(ratings) {
         return `
             <div class="cat-bar-row">
                 <div class="cat-bar-label-wrap">
-                    <span style="font-weight:500;color:var(--text-primary);">${r.category_display}</span>
-                    <span class="mono" style="color:${color};font-weight:700;">${r.rating_label} (${r.rating}/5)</span>
+                    <span style="font-weight:500;color:var(--text-primary);">${escapeHtml(r.category_display)}</span>
+                    <span class="mono" style="color:${color};font-weight:700;">${escapeHtml(r.rating_label)} (${r.rating}/5)</span>
                 </div>
                 <div class="cat-bar-track">
                     <div class="cat-bar-fill" style="width:${pct}%;background:${color};"></div>
                 </div>
-                ${r.notes ? `<div style="font-size:0.75rem;color:var(--text-tertiary);font-style:italic;">"${r.notes}"</div>` : ''}
+                ${r.notes ? `<div style="font-size:0.75rem;color:var(--text-tertiary);font-style:italic;">"${escapeHtml(r.notes)}"</div>` : ''}
             </div>
         `;
     }).join('');

@@ -51,8 +51,35 @@ from django.db import transaction
 from django.utils import timezone
 
 from ai_integration.providers import PredictionResponse
+from ai_integration.severity import score_to_alert_level
 
 logger = logging.getLogger("rakshak.ai_integration.alert_service")
+
+# Minimum delay between duplicate alerts for the same section + type.
+# Prevents one persistent fault from flooding the alert queue when
+# predictions repeat inside a short window.
+DEDUP_WINDOW_MINUTES = 30
+
+
+def has_recent_duplicate_alert(
+    track_section_id: int,
+    alert_type: str,
+    window_minutes: int = DEDUP_WINDOW_MINUTES,
+) -> bool:
+    """
+    Return True if an active alert of the same type already exists for
+    this track section within the dedup window.
+    """
+    from datetime import timedelta
+
+    from railway.models import Alert
+
+    since = timezone.now() - timedelta(minutes=window_minutes)
+    return Alert.objects.filter(
+        track_section_id=track_section_id,
+        alert_type=alert_type,
+        created_at__gte=since,
+    ).exclude(status=Alert.Status.DISMISSED).exists()
 
 
 class AlertService:
@@ -74,25 +101,17 @@ class AlertService:
     """
 
     def __init__(self):
-        self._alert_counter = 0
+        pass
 
     def _generate_alert_code(self) -> str:
         """
-        Generate a unique alert code.
-
-        Format: ALT-YYYYMMDD-NNNN
-
-        # ---------------------------------------------------------------
-        # DATABASE MIGRATION NOTE
-        #
-        # alert_code is a CharField(unique=True) in the Alert model.
-        # PostgreSQL enforces uniqueness.
-        # Teammate action: NONE
-        # ---------------------------------------------------------------
+        Generate a globally unique, collision-resistant alert code (<= 20 chars).
+        Format: ALT-YYYYMMDD-XXXXXX (e.g. ALT-20260823-A1B2C3) -> 19 chars.
         """
-        self._alert_counter += 1
+        import uuid
         now = timezone.now()
-        return f"ALT-{now.strftime('%Y%m%d')}-{self._alert_counter:04d}"
+        unique_suffix = uuid.uuid4().hex[:6].upper()
+        return f"ALT-{now.strftime('%Y%m%d')}-{unique_suffix}"
 
     def create_anomaly_alert(
         self,
@@ -134,10 +153,20 @@ class AlertService:
 
         score = response.anomaly_score
 
-        # Map score → severity
-        if score >= 0.9:
+        # Dedup: collapse repeat predictions of the same fault on the same
+        # section inside the window instead of flooding the alert queue.
+        if has_recent_duplicate_alert(track_section_id, Alert.AlertType.ANOMALY):
+            logger.info(
+                f"AlertService: Suppressing duplicate anomaly alert for "
+                f"section={track_section_id} within {DEDUP_WINDOW_MINUTES}min window"
+            )
+            return None
+
+        # Map score → severity via centralized thresholds (severity.py)
+        level = score_to_alert_level(score)
+        if level == "critical":
             severity = Alert.Severity.CRITICAL
-        elif score >= 0.7:
+        elif level == "warning":
             severity = Alert.Severity.WARNING
         else:
             severity = Alert.Severity.INFO

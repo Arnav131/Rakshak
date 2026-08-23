@@ -94,7 +94,6 @@ class AnomalyDetectionAgent(BaseAgent):
     def __init__(self, config: Optional[Dict] = None):
         super().__init__(config)
         self._prediction_service = None
-        self._alert_counter = 0
 
     def _ensure_prediction_service(self):
         """
@@ -122,10 +121,17 @@ class AnomalyDetectionAgent(BaseAgent):
             self._prediction_service = None
 
     def _generate_alert_code(self) -> str:
-        """Generate a unique alert code."""
-        self._alert_counter += 1
+        """Generate a unique, collision-resistant alert code.
+
+        Uses a UUID suffix instead of an in-memory counter: counters
+        restart at 0001 on process restart and collide with the unique
+        alert_code constraint.
+        """
+        import uuid
+
         now = timezone.now()
-        return f"ALT-{now.strftime('%Y%m%d')}-{self._alert_counter:04d}"
+        unique_suffix = uuid.uuid4().hex[:6].upper()
+        return f"ALT-{now.strftime('%Y%m%d')}-{unique_suffix}"
 
     def process(self, data: Any) -> Dict:
         """
@@ -302,15 +308,17 @@ class AnomalyDetectionAgent(BaseAgent):
         # ---------------------------------------------------------------
         """
         from railway.models import Alert
+        from ai_integration.severity import score_to_alert_level
 
-        # Determine severity from anomaly score
+        # Determine severity from anomaly score via centralized thresholds
         score = response.anomaly_score
-        if score >= 0.9:
+        level = score_to_alert_level(score)
+        if level == "critical":
             severity = Alert.Severity.CRITICAL
-        elif score >= 0.7:
+        elif level == "warning":
             severity = Alert.Severity.WARNING
         else:
-            severity = "info"
+            severity = Alert.Severity.INFO
 
         fault_info = ""
         if response.fault_type != "unknown":
@@ -329,7 +337,7 @@ class AnomalyDetectionAgent(BaseAgent):
                 trigger_reading_id=reading_id,
                 alert_type="anomaly",
                 severity=severity,
-                title=f"Anomaly Detected: {fault_type} (score: {score:.2f})",
+                title=f"Anomaly Detected: {response.fault_type} (score: {score:.2f})",
                 description=(
                     f"AI anomaly detection triggered.\n"
                     f"Score: {score:.4f}\n"

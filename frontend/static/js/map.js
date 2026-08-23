@@ -112,8 +112,13 @@ function initRakshakControlMap() {
         updateMapMetrics(rakshakMapState);
         updateDefaultInspector(rakshakMapState);
         fitIndia(rakshakMapState);
-        focusRequestedAlert(rakshakMapState);
         refreshTrains(rakshakMapState);
+
+        // Start continuous live polling so trains visibly move along tracks
+        if (window._rakshakTrainInterval) clearInterval(window._rakshakTrainInterval);
+        window._rakshakTrainInterval = setInterval(function () {
+            refreshTrains(rakshakMapState);
+        }, 2500);
 
         window.setTimeout(function () {
             map.invalidateSize();

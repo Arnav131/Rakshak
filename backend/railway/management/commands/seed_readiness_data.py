@@ -273,5 +273,85 @@ class Command(BaseCommand):
                 }
             )
 
-        self.stdout.write(self.style.SUCCESS("Successfully seeded Flight-Deck Train Departure Clearance cases!"))
+        # -------------------------------------------------------------
+        # SEED LINKED GROUND PATROL INSPECTIONS
+        # -------------------------------------------------------------
+        from patrol.models import WorkerPatrolReport, PatrolCategoryRating
+
+        # Patrol 1: Track Section 1 (Nominal / Cleared)
+        p1, _ = WorkerPatrolReport.objects.update_or_create(
+            patrol_code="PTR-2026-0001",
+            defaults={
+                "worker": worker_user,
+                "track_section": trk_1,
+                "patrol_started_at": timezone.now() - timezone.timedelta(hours=2),
+                "patrol_completed_at": timezone.now() - timezone.timedelta(minutes=30),
+                "worker_overall_score": Decimal("95.00"),
+                "iot_overall_score": Decimal("96.00"),
+                "composite_score": Decimal("95.40"),
+                "worker_weight": Decimal("0.60"),
+                "iot_weight": Decimal("0.40"),
+                "conflict_detected": False,
+                "status": WorkerPatrolReport.Status.DECIDED,
+                "admin_decision": WorkerPatrolReport.AdminDecision.CLEARED,
+                "admin_decision_by": "Chief Dispatcher",
+                "admin_decision_at": timezone.now() - timezone.timedelta(minutes=15),
+                "admin_notes": "Physical ground inspection verified 100% nominal across all 8 RDSO categories.",
+            }
+        )
+        p1_ratings = [
+            (PatrolCategoryRating.Category.RAIL_CONDITION, 5, "No surface defects, micro-cracks or head wear detected."),
+            (PatrolCategoryRating.Category.TRACK_GEOMETRY, 5, "Gauge 1676.0mm exact, cross-levels nominal."),
+            (PatrolCategoryRating.Category.SLEEPERS_FASTENINGS, 5, "All ERC clips and rubber pads intact."),
+            (PatrolCategoryRating.Category.BALLAST_CONDITION, 4, "Cushion depth adequate, clean ballast shoulder."),
+            (PatrolCategoryRating.Category.DRAINAGE, 5, "Side drains cleared of debris, zero waterlogging."),
+            (PatrolCategoryRating.Category.POINTS_CROSSINGS, 5, "Switch tongue rail tight against stock rail."),
+            (PatrolCategoryRating.Category.LEVEL_CROSSINGS, 5, "Lifting barrier locked, road surface smooth."),
+            (PatrolCategoryRating.Category.FORMATION_EARTHWORK, 4, "Embankment stable, cess width compliant."),
+        ]
+        for cat, val, note in p1_ratings:
+            PatrolCategoryRating.objects.update_or_create(
+                patrol=p1, category=cat,
+                defaults={"rating": val, "notes": note}
+            )
+
+        # Patrol 2: Track Section 2 (Defects / Hold)
+        p2, _ = WorkerPatrolReport.objects.update_or_create(
+            patrol_code="PTR-2026-0002",
+            defaults={
+                "worker": worker_user,
+                "track_section": trk_2,
+                "patrol_started_at": timezone.now() - timezone.timedelta(hours=1),
+                "patrol_completed_at": timezone.now() - timezone.timedelta(minutes=10),
+                "worker_overall_score": Decimal("42.50"),
+                "iot_overall_score": Decimal("35.00"),
+                "composite_score": Decimal("39.50"),
+                "worker_weight": Decimal("0.60"),
+                "iot_weight": Decimal("0.40"),
+                "conflict_detected": False,
+                "status": WorkerPatrolReport.Status.SUBMITTED,
+                "admin_decision": WorkerPatrolReport.AdminDecision.BLOCKED,
+                "admin_decision_by": "Safety Officer",
+                "admin_decision_at": timezone.now() - timezone.timedelta(minutes=5),
+                "admin_notes": "Defect report logged: Ballast settling & dynamic gauge deviation at KM 42/6.",
+            }
+        )
+        p2_ratings = [
+            (PatrolCategoryRating.Category.RAIL_CONDITION, 3, "Corrugation wear observed on high rail curve."),
+            (PatrolCategoryRating.Category.TRACK_GEOMETRY, 2, "Dynamic gauge deviation +4.2mm under traffic."),
+            (PatrolCategoryRating.Category.SLEEPERS_FASTENINGS, 2, "2 cracked concrete sleepers near turnout 14B."),
+            (PatrolCategoryRating.Category.BALLAST_CONDITION, 1, "Critical ballast settling and mud pumping at KM 42/6."),
+            (PatrolCategoryRating.Category.DRAINAGE, 3, "Side drain silt buildup requiring clearing."),
+            (PatrolCategoryRating.Category.POINTS_CROSSINGS, 2, "Point machine throw slack detected."),
+            (PatrolCategoryRating.Category.LEVEL_CROSSINGS, 4, "Gate mechanism operational."),
+            (PatrolCategoryRating.Category.FORMATION_EARTHWORK, 2, "Cess erosion on down-slope side."),
+        ]
+        for cat, val, note in p2_ratings:
+            PatrolCategoryRating.objects.update_or_create(
+                patrol=p2, category=cat,
+                defaults={"rating": val, "notes": note}
+            )
+
+        self.stdout.write(self.style.SUCCESS("Successfully seeded Flight-Deck Train Departure Clearance cases with Ground Patrol data!"))
+
 
