@@ -66,7 +66,7 @@
 | **CDN for Chart.js & Leaflet** | Eliminates build tooling. Chart.js 4.4.4 and Leaflet 1.9.4 loaded from stable CDNs. |
 | **Single monolithic CSS** | Manageable at 700 lines. Component extraction planned for Phase 2 when page count grows. |
 | **Context processors for nav** | DRY pattern — nav items and branding injected into every template via Django middleware. |
-| **SQLite (default)** | Zero-config for developers and judges. PostgreSQL migration planned for Phase 2. |
+| **Supabase/PostgreSQL** | Runtime database is configured with `DATABASE_URL`; SQLite is not a supported app database. |
 | **No authentication** | Not needed for demo. Django auth + JWT planned for Phase 2. |
 | **`json_script` for JS data** | Django's built-in safe serialization — avoids XSS while passing data to Chart.js/Leaflet. |
 | **Separate `map_view` app** | The spec's `agents/` directory is reserved for future AI agents; map logic lives in its own app. |

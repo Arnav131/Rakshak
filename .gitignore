@@ -13,6 +13,8 @@ eggs/
 
 # Django
 db.sqlite3
+*.sqlite
+*.sqlite3
 db.sqlite3-journal
 staticfiles/
 media/
@@ -22,6 +24,8 @@ venv/
 env/
 .venv/
 .env
+.env.*
+!.env.example
 
 # IDE
 .vscode/
@@ -37,3 +41,15 @@ desktop.ini
 
 # Logs
 *.log
+
+# Raw GIS temporary downloads
+raw_overpass_railway.json
+*.pbf
+*.mbtiles
+*.pmtiles
+*.shp
+*.zip
+
+# Prevent accidental binary/scratch pipeline artifacts in repo root
+/temp_pipeline.py
+**/temp_pipeline.py

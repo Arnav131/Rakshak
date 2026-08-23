@@ -1,0 +1,71 @@
+name: CI/CD — Build, Test & Deploy Rakshak
+
+# Kab chalega: main branch pe push ya PR hone pe
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Job 1: Build aur Test
+  # ──────────────────────────────────────────────
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Code checkout karo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Python setup karo
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # Step 3: Dependencies install karo
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Step 4: Django checks chala ke verify karo
+      - name: Run Django system checks
+        run: |
+          cd backend
+          python manage.py check --deploy
+        env:
+          SECRET_KEY: 'ci-test-secret-key-not-for-production'
+          DEBUG: 'False'
+          ALLOWED_HOSTS: 'localhost,127.0.0.1'
+
+      # Step 5: Collectstatic test karo
+      - name: Test collectstatic
+        run: |
+          cd backend
+          python manage.py collectstatic --noinput
+        env:
+          SECRET_KEY: 'ci-test-secret-key-not-for-production'
+          DEBUG: 'False'
+
+      # Step 6: Docker image build test karo
+      - name: Build Docker image
+        run: docker build -t rakshak-test .
+
+  # ──────────────────────────────────────────────
+  # Job 2: Render pe Deploy (sirf main branch push pe)
+  # ──────────────────────────────────────────────
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Trigger Render Deploy
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}

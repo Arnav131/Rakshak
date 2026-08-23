@@ -111,5 +111,5 @@ Phase 1 is a **monolithic Django application** serving server-rendered HTML page
 | CDN for Chart.js & Leaflet | No build step needed; reduces project complexity |
 | Single CSS file | Manageable at current scale; component extraction in Phase 2 |
 | No authentication | Not needed for demo; will add Django auth + JWT in Phase 2 |
-| SQLite default | Zero-config; no Postgres setup for reviewers running locally |
+| Supabase/PostgreSQL only | Matches the runtime database and avoids local SQLite drift |
 | Context processors for nav | DRY pattern — nav/branding injected into all templates automatically |

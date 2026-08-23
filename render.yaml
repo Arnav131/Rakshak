@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: rakshak
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ""
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_CONN_MAX_AGE
+        value: "60"
+      - key: GEMINI_API_KEY
+        sync: false
