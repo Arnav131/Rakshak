@@ -110,11 +110,11 @@
 
 ### 🔐 Role-Based Access Control
 
-| Role | Access Level |
-|------|-------------|
+| Role                   | Access Level                                                                    |
+| ---------------------- | ------------------------------------------------------------------------------- |
 | **Controller** (Staff) | Full access — Dashboard, Map, Simulation, Readiness, Patrol Admin, Django Admin |
-| **Patrol Worker** | Dashboard, Map, Alerts, Tickets + Patrol submission |
-| **Read-Only Viewer** | Dashboard, Map, Alerts, Tickets — no control actions |
+| **Patrol Worker**      | Dashboard, Map, Alerts, Tickets + Patrol submission                             |
+| **Read-Only Viewer**   | Dashboard, Map, Alerts, Tickets — no control actions                            |
 
 > Server-side enforcement on every restricted page and API — not just hidden menus.
 
@@ -124,14 +124,14 @@
 
 A trained **6-model ensemble** inference pipeline — the core intelligence of Rakshak:
 
-| Model | File | Purpose |
-|-------|------|---------|
-| 🔬 VAE Anomaly Detector | `vae_anomaly_detector.pt` | Deep-learning detection of abnormal sensor patterns |
-| ⚡ Failure Predictor | `failure_predictor.pt` | Future failure risk at 1h / 6h / 24h horizons |
-| 🔧 Fault Classifier | `fault_classifier.pt` | Classifies: rail fracture, thermal buckle, gauge widening, ballast washout, subgrade failure |
-| 🌲 Isolation Forest | `isolation_forest.joblib` | Classical ML anomaly detection |
-| 📈 Statistical Detector | `stat_detector.joblib` | Fast statistical deviation checks |
-| 🎯 Meta-Classifier | `meta_classifier.joblib` | Fuses all detector scores into a single verdict |
+| Model                  | File                      | Purpose                                                                                      |
+| ---------------------- | ------------------------- | -------------------------------------------------------------------------------------------- |
+| 🔬 VAE Anomaly Detector | `vae_anomaly_detector.pt` | Deep-learning detection of abnormal sensor patterns                                          |
+| ⚡ Failure Predictor    | `failure_predictor.pt`    | Future failure risk at 1h / 6h / 24h horizons                                                |
+| 🔧 Fault Classifier     | `fault_classifier.pt`     | Classifies: rail fracture, thermal buckle, gauge widening, ballast washout, subgrade failure |
+| 🌲 Isolation Forest     | `isolation_forest.joblib` | Classical ML anomaly detection                                                               |
+| 📈 Statistical Detector | `stat_detector.joblib`    | Fast statistical deviation checks                                                            |
+| 🎯 Meta-Classifier      | `meta_classifier.joblib`  | Fuses all detector scores into a single verdict                                              |
 
 **How it works:**
 - **64-reading rolling window** per sensor (sequence model)
@@ -144,14 +144,14 @@ A trained **6-model ensemble** inference pipeline — the core intelligence of R
 
 ## 🔌 API Endpoints
 
-| Category | Endpoints |
-|----------|-----------|
-| **Map & Ops** | `/api/stations/` · `/api/routes/` · `/api/alerts/` · `/api/tickets/` · `/api/summary/` · `/api/trains/` |
-| **Predictions** | `/api/predict/` · `/api/predict/batch/` · `/api/predict/health/` |
-| **AI Subsystem** | `/api/ai/predict/` · `/api/ai/predict/batch/` · `/api/ai/health/` · `/api/ai/providers/` |
-| **Simulation** | `/api/simulation/run/` · `/api/simulation/stations/` · `/api/simulation/route/` |
-| **Readiness** | `/api/readiness/cases/` · sign-off & decision endpoints |
-| **Patrol** | `/api/patrol/` — start / list / detail / ratings / weights / decision |
+| Category         | Endpoints                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------- |
+| **Map & Ops**    | `/api/stations/` · `/api/routes/` · `/api/alerts/` · `/api/tickets/` · `/api/summary/` · `/api/trains/` |
+| **Predictions**  | `/api/predict/` · `/api/predict/batch/` · `/api/predict/health/`                                        |
+| **AI Subsystem** | `/api/ai/predict/` · `/api/ai/predict/batch/` · `/api/ai/health/` · `/api/ai/providers/`                |
+| **Simulation**   | `/api/simulation/run/` · `/api/simulation/stations/` · `/api/simulation/route/`                         |
+| **Readiness**    | `/api/readiness/cases/` · sign-off & decision endpoints                                                 |
+| **Patrol**       | `/api/patrol/` — start / list / detail / ratings / weights / decision                                   |
 
 ---
 
@@ -192,11 +192,11 @@ python manage.py runserver
 
 ### Demo Accounts
 
-| Username | Password | Role |
-|----------|----------|------|
-| `controller` | `admin123` | Controller (full access + Simulation) |
-| `viewer` | `viewer123` | Read-only viewer |
-| `worker` | `worker123` | Patrol worker |
+| Username     | Password    | Role                                  |
+| ------------ | ----------- | ------------------------------------- |
+| `controller` | `admin123`  | Controller (full access + Simulation) |
+| `viewer`     | `viewer123` | Read-only viewer                      |
+| `worker`     | `worker123` | Patrol worker                         |
 
 ---
 
@@ -250,28 +250,28 @@ Dockerfile → pip install → collectstatic → docker-entrypoint.sh → migrat
 
 ## 📚 Documentation
 
-| Document | Description |
-|----------|-------------|
-| [user_manual.md](user_manual.md) | Complete setup, seed, and usage guide + feature catalog |
-| [docs/AI_ENGINE_GUIDE.md](docs/AI_ENGINE_GUIDE.md) | AI engine architecture deep-dive |
-| [docs/Codebase.md](docs/Codebase.md) | Full codebase navigation map |
-| [docs/architecture/](docs/architecture/) | System architecture overview |
-| [docs/database_guide.md](docs/database_guide.md) | Database schema & migration guide |
-| [docs/PROGRESS_REPORT.md](docs/PROGRESS_REPORT.md) | Development progress report |
-| [docs/deployment.md](docs/deployment.md) | Deployment configuration details |
+| Document                                           | Description                                             |
+| -------------------------------------------------- | ------------------------------------------------------- |
+| [user_manual.md](user_manual.md)                   | Complete setup, seed, and usage guide + feature catalog |
+| [docs/AI_ENGINE_GUIDE.md](docs/AI_ENGINE_GUIDE.md) | AI engine architecture deep-dive                        |
+| [docs/Codebase.md](docs/Codebase.md)               | Full codebase navigation map                            |
+| [docs/architecture/](docs/architecture/)           | System architecture overview                            |
+| [docs/database_guide.md](docs/database_guide.md)   | Database schema & migration guide                       |
+| [docs/PROGRESS_REPORT.md](docs/PROGRESS_REPORT.md) | Development progress report                             |
+| [docs/deployment.md](docs/deployment.md)           | Deployment configuration details                        |
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Technologies |
-|-------|-------------|
-| **Backend** | Python 3.10+ · Django 4.2 · Gunicorn · WhiteNoise |
-| **Database** | PostgreSQL (Supabase) · dj-database-url · SSL pooling |
-| **Frontend** | HTML5 · CSS3 · Vanilla JS · Chart.js · Leaflet.js |
-| **AI/ML** | PyTorch 2.2+ · NumPy · scikit-learn · Isolation Forest · VAE |
-| **AI Generators** | Gemini → Grok → Anthropic → OpenAI → Ollama → Physics RNG |
-| **DevOps** | Docker · Render · GitHub Actions |
+| Layer             | Technologies                                                 |
+| ----------------- | ------------------------------------------------------------ |
+| **Backend**       | Python 3.10+ · Django 4.2 · Gunicorn · WhiteNoise            |
+| **Database**      | PostgreSQL (Supabase) · dj-database-url · SSL pooling        |
+| **Frontend**      | HTML5 · CSS3 · Vanilla JS · Chart.js · Leaflet.js            |
+| **AI/ML**         | PyTorch 2.2+ · NumPy · scikit-learn · Isolation Forest · VAE |
+| **AI Generators** | Gemini → Grok → Anthropic → OpenAI → Ollama → Physics RNG    |
+| **DevOps**        | Docker · Render · GitHub Actions                             |
 
 ---
 
@@ -279,7 +279,7 @@ Dockerfile → pip install → collectstatic → docker-entrypoint.sh → migrat
 
 ### Built with ❤️ for railway safety
 
-*Rakshak — Because every journey deserves to arrive safely.*
+*Rakshak — Because every journey deserves to arrive safely Jai Hind Jai Bharat.*
 
 **[⬆ Back to Top](#️-rakshak)**
 
